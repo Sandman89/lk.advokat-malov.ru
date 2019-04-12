@@ -18,7 +18,6 @@ use yii\helpers\Html;
 <?php echo lo\widgets\modal\ModalAjax::widget([
     'id' => 'create-workflow',
     'header' => '<h4 class="modal-title">Добавить этап выполнения дела</h4>',
-
     'selector' => 'a.lo-modal',
     'closeButton' => [
         'label' => '<i class="font-icon-close-2"></i>',

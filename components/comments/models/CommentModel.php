@@ -86,19 +86,6 @@ class CommentModel extends ActiveRecord
     /**
      * @inheritdoc
      */
-
-    /* public function rules()
-     {
-         return [
-            // [['entity', 'entityId', 'content', 'createdBy', 'updatedBy', 'relatedTo', 'createdAt', 'updatedAt'], 'required'],
-             [['entityId', 'parentId', 'level', 'createdBy', 'updatedBy', 'status', 'createdAt', 'updatedAt'], 'integer'],
-             [['content', 'url', 'token_comment'], 'string'],
-             [['entity'], 'string', 'max' => 10],
-             [['relatedTo'], 'string', 'max' => 500],
-         ];
-     }*/
-
-
     public function rules()
     {
         return [
@@ -109,8 +96,8 @@ class CommentModel extends ActiveRecord
             ['status', 'default', 'value' => Status::APPROVED],
             ['status', 'in', 'range' => Status::getConstantsByName()],
             [['image', 'createdAt', 'customcreatedAt', 'createdAt_local'], 'safe'],
-            [['image'], 'file', 'extensions' => 'jpg, gif, png'],
-            [['image'], 'file', 'maxSize' => '100000'],
+            [['image'], 'file', 'extensions' => 'jpg,jpeg, gif, png, doc, docx, pdf, xlsx, rar, zip, xlsx, xls, txt, csv, rtf, one, pptx, ppsx, pot'],
+            [['image'], 'file', 'maxSize' => '10000000'],
             ['level', 'default', 'value' => 1],
             ['parentId', 'validateParentID'],
             [['entityId', 'parentId', 'status', 'level'], 'integer'],
