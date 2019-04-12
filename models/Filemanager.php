@@ -85,7 +85,7 @@ class Filemanager extends \yii\db\ActiveRecord
     public function SaveTempAttachments($attachments)
     {
         $files = [];
-        $allwoedFiles = ['jpg', 'gif', 'png', 'doc', 'docx', 'pdf', 'xlsx', 'rar', 'zip', 'xlsx', 'xls', 'txt', 'csv', 'rtf', 'one', 'pptx', 'ppsx', 'pot'];
+        $allwoedFiles = ['jpg','jpeg', 'gif', 'png', 'doc', 'docx', 'pdf', 'xlsx', 'rar', 'zip', 'xlsx', 'xls', 'txt', 'csv', 'rtf', 'one', 'pptx', 'ppsx', 'pot'];
         if ($_FILES) {
             $tmpname = $_FILES['CommentModel']['tmp_name']['image'];
             $fname = $_FILES['CommentModel']['name']['image'];
@@ -114,7 +114,7 @@ class Filemanager extends \yii\db\ActiveRecord
                                     $true_type = self::getFileType($type[$i]);
                                     $initialPreviewConfig[] = [
                                         'key'=>$i,
-                                        'caption'=>$original_name,
+                                        'caption'=>$original_name.'.'.$ext,
                                         'type'=>$true_type,
                                         'size'=>(($size/1000)),
                                         'originalName'=>$newFileName
@@ -156,5 +156,13 @@ class Filemanager extends \yii\db\ActiveRecord
         if (preg_match('/(pdf)/', $_filetype))
             return 'pdf';
         return 'other';
+    }
+
+    /**
+     * @param Filemanager $file
+     */
+    public static function getLinkFileType($file){
+        if ($file->type == "office")
+            return;
     }
 }

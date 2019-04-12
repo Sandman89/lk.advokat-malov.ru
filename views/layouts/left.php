@@ -36,9 +36,9 @@ use yii\helpers\Html;
         ['label' => 'Компания', 'template' => '<a href="{url}" > <i class="font-icon font-icon-build"></i><span class="lbl">{label}</span></a>', 'url' => ['/admin/experts']],
         ['label' => 'Настройки', 'template' => '<a href="{url}" > <i class="glyphicon glyphicon-cog"></i><span class="lbl">{label}</span></a>', 'url' => ['/site/settings']],
         Yii::$app->user->isGuest ? (
-        ['label' => 'Вход', 'template' => '<a href="{url}" > <i class="ti-check-box"></i><span class="lbl">{label}</span></a>', 'url' => ['/user/login']]
+        ['label' => 'Вход', 'template' => '<a href="{url}" > <i class="glyphicon glyphicon-log-in"></i><span class="lbl">{label}</span></a>', 'url' => ['/user/login']]
         ) : (
-        ['label' => 'Выход (' . Yii::$app->user->identity->username . ')', 'template' => '<a href="{url}" data-method="post"> <i class="ti-check-box"></i><span class="lbl">{label}</span></a>', 'url' => ['/site/logout']]
+        ['label' => 'Выход', 'template' => '<a href="{url}" data-method="post"> <i class="glyphicon glyphicon-log-out"></i><span class="lbl">{label}</span></a>', 'url' => ['/site/logout']]
         ),
     ], 'options' => ['class' => 'side-menu-list'],
         'itemOptions' => ['class' => 'grey'],
