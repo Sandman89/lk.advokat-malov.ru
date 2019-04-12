@@ -46,7 +46,7 @@ use yii2mod\editable\Editable;
                     <div class="attachments">
                         <?php foreach ($model->files as $file) : ?>
                             <div class="attachments-element">
-                                <i class="font-icon font-icon-page">
+                                <i class="font-icon font-icon-attachment-type font-icon-page">
                                     <span class="attachments-element_ext ext_<?php echo $file->ext; ?>"><?php echo $file->ext; ?></span>
                                 </i>
                                 <div class="attachments-element_name"><?php echo $file->original_name; ?></div>

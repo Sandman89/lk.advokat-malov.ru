@@ -12535,7 +12535,30 @@ body.modal-open {
 .workflow-body {
     color: #6c7a86;
 }
-
+.krajee-default.file-preview-frame .kv-file-content{
+    width: 82px !important;
+    height: 50px !important;
+    margin: 0 auto;
+}
+.krajee-default .file-caption-info {
+    display: inline-block;
+     white-space: inherit !important;
+    overflow:visible !important;
+     text-overflow: inherit!important;
+     width: inherit !important;
+     height: 39px !important;
+    margin: auto;
+    max-width: 155px;
+    font-size: 14px;
+}
+.krajee-default .file-size-info{
+    display: none !important;
+}
+.krajee-default i.font-icon-attachment-type{
+    position: relative;
+    top: 5px;
+    display: block;
+}
 .attachments-element {
     display: inline-block;
     max-width: 300px;
@@ -12548,7 +12571,7 @@ body.modal-open {
     margin-top: 8px;
 }
 
-.attachments-element i {
+i.font-icon-attachment-type {
     font-size: 2.875rem;
     position: absolute;
     left: 0;
