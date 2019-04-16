@@ -52,7 +52,7 @@ use yii2mod\editable\Editable;
                                 <div class="attachments-element_name"><?php echo $file->original_name; ?></div>
                                 <div class="attachments-element_link">
                                     <a href="<?= $file->path; ?>" download data-pjax=0>Скачать</a>
-                                    <a target="_blank" href="https://view.officeapps.live.com/op/embed.aspx?src=<?= Url::base(TRUE).$file->path; ?>">Смотреть</a>
+                                    <?php echo \app\models\Filemanager::getLinkFileType($file)?>
                                 </div>
                             </div>
                         <?php endforeach; ?>

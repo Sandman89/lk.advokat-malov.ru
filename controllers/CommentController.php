@@ -106,6 +106,22 @@ class CommentController extends Controller
         $files = array();
         //$allwoedFiles = ['jpg', 'png'];
         if ($_POST['is_post'] == 'update') {
+            if ($_FILES) {
+                $files = Filemanager::SaveTempAttachments($_FILES);
+                $file = new Filemanager();
+                $file->load($_POST);
+                $file->name = $files['shortname'];
+                $file->original_name = $files['original_name'];
+                $file->path = $files['path'];
+                $file->ext = $files['ext'];
+                $file->type = $files['type'];
+                $file->save();
+                return json_encode($files);
+                $result = ['files' => $files];
+                Yii::$app->response->format = trim(Response::FORMAT_JSON);
+                return $result;
+            }
+
             //update image
             /*
             $products_id = $_POST['products_id'];
@@ -161,6 +177,87 @@ class CommentController extends Controller
                     return $result;
                 }
             }
+        }
+    }
+
+    /**
+     * Uploaded Images Delete Action on Update Forms Action
+     * @return boolean
+     */
+    public function actionDeleteFile()
+    {
+
+        $key = $_POST['key'];
+        if ($key > 0) {
+            $file = Filemanager::find()->where(['id' => $key])->one();
+        }
+        else{
+            $name = $_POST['name'];
+            $file = Filemanager::find()->where(['name' => $name])->one();
+        }
+
+        unlink(Yii::getAlias('@webroot') . $file->path);
+        $file->delete();
+        return true;
+
+    }
+
+    /**
+     * @param $id
+     * @return int|string|Response
+     */
+    public function actionUpdate($id)
+    {
+        $commentModel = CommentModel::findOne($id);
+        if ($commentModel->title)
+            $commentModel->scenario = 'workflow';
+        //если есть файлы у комментария, то делаем перевод файлов в правильную папку
+        $files = Filemanager::find()->where(['token_comment' => $commentModel->token_comment])->all();
+        if ($commentModel->load(\Yii::$app->request->post())) {
+            if ($commentModel->saveComment()) {
+                //если есть файлы у комментария, которые еще не сохранены
+                $files = Filemanager::find()->where(['token_comment' => $commentModel->token_comment, 'id_comment' => null])->all();
+                if (count($files) > 0) {
+                    $root = Yii::getAlias('@webroot');
+                    $newFilePath = '/attachments/' . $commentModel->entityId . '_' . self::RandomString($commentModel->entityId);
+                    foreach ($files as $file) {
+                        //создаем новую папку для соответствующего дела и переносим туда файл из комментария
+                        if (!is_dir($root . $newFilePath)) {
+                            mkdir($root . $newFilePath, 0755, true);
+                        }
+                        rename($root . $file->path, $root . $newFilePath . '/' . $file->name);
+                        //обновляем путь до файла в таблице файлов
+                        $file->path = $newFilePath . '/' . $file->name;
+                        //устанавливаем id коммент для ссылки
+                        $file->id_comment = $commentModel->id;
+                        $file->update(false);
+                    }
+                }
+                if (Yii::$app->request->isAjax) {
+                    Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+                    return $commentModel->id;
+                } else {
+                    return $this->redirect(['create-workflow']);
+                }
+            } else {
+                var_dump($commentModel->errors);
+                die();
+            }
+        }
+        if (Yii::$app->request->isAjax) {
+            return $this->renderAjax('@app/components/comments/views/workflow', [
+                'commentModel' => $commentModel,
+                'files' => $files,
+                'id_issue' => $commentModel->entityId,
+                'token_comment' => $commentModel->token_comment
+            ]);
+        } else {
+            return $this->render('@app/components/comments/views/workflow', [
+                'commentModel' => $commentModel,
+                'files' => $files,
+                'id_issue' => $commentModel->entityId,
+                'token_comment' => $commentModel->token_comment
+            ]);
         }
     }
 

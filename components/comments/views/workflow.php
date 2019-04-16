@@ -57,7 +57,7 @@ $this->title = 'Создать этап дела';
             ]); ?></div>
         <div class="col-sm-6">
             <?= $form->field($commentModel, 'title')->widget(Typeahead::classname(), [
-                'options' => ['placeholder' => 'Выберите название или введите свое...','autocomplete' => 'off'],
+                'options' => ['placeholder' => 'Выберите название или введите свое...', 'autocomplete' => 'off'],
                 'defaultSuggestions' => \app\components\comments\models\CommentModel::$workflow_title,
                 'pluginOptions' => ['highlight' => true],
                 'dataset' => [
@@ -73,7 +73,20 @@ $this->title = 'Создать этап дела';
         <div class="col-sm-12"><?= $form->field($commentModel, 'content')->textarea(['rows' => 3]) ?></div>
     </div>
     <?= $form->field($commentModel, 'token_comment', ['template' => '{input}', 'options' => ['class' => ''],])->hiddenInput()->label(false); ?>
-
+    <?php
+    //For Update Form : Fetch Uploaded Files and create Array to preview
+    $fileList = [];
+    $fileListId = [];
+    if (!empty($files))
+        foreach ($files as $file) {
+            $fileList[] = Url::base(TRUE) . $file->path;
+            $fileListId[] = [
+                'key' => $file->id,
+                'caption' => $file->original_name . '.' . $file->ext,
+                'type' => $file->type
+            ];
+        }
+    ?>
     <div class="row">
         <div class="col-sm-12">
             <?php echo FileInput::widget([
@@ -91,7 +104,6 @@ $this->title = 'Создать этап дела';
                         'progress' => '',
                         'size' => '',
                         'close' => '',
-                        // 'footer'=>'<div class="file-thumbnail-footer"><div class="file-caption-name">{caption}{size}</div>{CUSTOM_TAG_NEW}{CUSTOM_TAG_INIT}{actions}</div>',
                     ],
                     'uploadAsync' => true,
                     //'showPreview' => true,
@@ -103,8 +115,8 @@ $this->title = 'Создать этап дела';
                     'showUpload' => false,
                     'showUploadStats' => false,
                     'showBrowse' => false,
-                    'previewClass'=>'workflow-file-preview',
-                    'allowedFileExtensions' => ['jpg','jpeg', 'gif', 'png', 'doc', 'docx', 'pdf', 'xlsx', 'rar', 'zip', 'xlsx', 'xls', 'txt', 'csv', 'rtf', 'one', 'pptx', 'ppsx', 'pot'],
+                    'previewClass' => 'workflow-file-preview',
+                    'allowedFileExtensions' => ['jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'pdf', 'xlsx', 'rar', 'zip', 'xlsx', 'xls', 'txt', 'csv', 'rtf', 'one', 'pptx', 'ppsx', 'pot'],
                     'previewFileType' => 'image',
                     'previewFileIcon' => '<i class="font-icon font-icon-attachment-type font-icon-page"></i>',
                     'previewFileIconSettings' => [
@@ -121,19 +133,21 @@ $this->title = 'Создать этап дела';
                         'pptx' => '<i class="font-icon font-icon-attachment-type font-icon-page"></i>',
                         'ppsx' => '<i class="font-icon font-icon-attachment-type font-icon-page"></i>',
                         'pot' => '<i class="font-icon font-icon-attachment-type font-icon-page"></i>',
+                        'pdf' => '<i class="font-icon font-icon-attachment-type font-icon-page"></i>',
                         'jpg' => '<i class="font-icon font-icon-attachment-type font-icon-picture-2"></i>',
                         'jpeg' => '<i class="font-icon font-icon-attachment-type font-icon-picture-2"></i>',
                         'png' => '<i class="font-icon font-icon-attachment-type font-icon-picture-2"></i>',
                     ],
                     'previewSettings' => [
-                       "office" => ["width" => "auto", "height" => "auto"],
-                       "text" => ["width" => "auto", "height" => "auto"],
-                       "image" => ["width" => "auto", "height" => "auto"],
-                       "pdf" => ["width" => "auto", "height" => "auto"],
-                       "other" => ["width" => "auto", "height" => "auto"],
+                        "office" => ["width" => "auto", "height" => "auto"],
+                        "text" => ["width" => "auto", "height" => "auto"],
+                        "image" => ["width" => "auto", "height" => "auto"],
+                        "pdf" => ["width" => "auto", "height" => "auto"],
+                        "other" => ["width" => "auto", "height" => "auto"],
                     ],
                     'preferIconicPreview' => true,
-                 //   'allowedPreviewTypes' => ['image', 'html', 'text', 'video', 'audio', 'flash', 'object'],
+                    'initialPreview' => $fileList,
+                    'initialPreviewConfig' => $fileListId,
                     'initialPreviewAsData' => true,
                     'overwriteInitial' => false,
                     'browseLabel' => 'Выберите файлы',
@@ -142,23 +156,20 @@ $this->title = 'Создать этап дела';
                         'Filemanager[token_comment]' => $token_comment,
                         'is_post' => $commentModel->isNewRecord ? 'new' : 'update'
                     ],
+                    'deleteExtraData' => [
+                        'Filemanager[id_issue]' => $id_issue,
+                        'Filemanager[token_comment]' => $token_comment,
+                        'is_post' => $commentModel->isNewRecord ? 'new' : 'update'
+                    ],
                     'msgPlaceholder' => 'Select attachments',
                     'maxFileCount' => 10,
+                    'deleteUrl' => Url::to(['comment/delete-file']),
                     'uploadUrl' => Url::to(['comment/upload']),
                 ],
                 'pluginEvents' => [
                     'filebatchselected' => 'function(event, files) {
              $(this).fileinput("upload");
              }',
-
-                    'filepredelete' => 'function(event, files) {
-                //var abort = true;
-                var index = uploaded_images.indexOf(files);
-                if (index !== -1) uploaded_images.splice(index, 1);
-                 console.log(uploaded_images);
-                 $("#productsmaster-images_array").val(uploaded_images);
-               //return abort;   
-           }',
                     'fileuploaded' => 'function(event, data, previewId, index){
              // alert( data.response.initialPreviewConfig[0].caption);
              // uploaded_images.push(data.response.initialPreviewConfig[0].key);
@@ -173,17 +184,11 @@ $this->title = 'Создать этап дела';
 
     <div class="form-group row">
         <div class="col-sm-12 text-center">
-            <?= Html::submitButton('Создать', ['class' => 'btn btn-success']) ?><br>
+            <?= Html::submitButton($commentModel->isNewRecord ? 'Создать' : 'Обновить', ['class' => 'btn btn-success']) ?>
+            <br>
         </div>
     </div>
 
     <?php ActiveForm::end(); ?>
-    <?php
-    $script = <<< JS
-   // initialize array    
-   var uploaded_images = [];  
-JS;
-    $this->registerJs($script);
-    ?>
 
 
