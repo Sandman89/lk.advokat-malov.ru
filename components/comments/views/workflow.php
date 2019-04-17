@@ -13,7 +13,7 @@ use yii\helpers\Url;
  */
 
 $this->title = 'Создать этап дела';
-
+$is_workflow = (!empty($commentModel->title)) ? true : false;
 ?>
 
 
@@ -30,6 +30,7 @@ $this->title = 'Создать этап дела';
             'errorOptions' => ['class' => 'form-tooltip-error']
         ],
     ]); ?>
+    <?php if ($is_workflow) : ?>
     <div class="row">
         <div class="col-sm-6"> <?= $form->field($commentModel, 'createdAt_local')->widget(FlatpickrWidget::class, [
                 'locale' => 'ru',
@@ -69,6 +70,7 @@ $this->title = 'Создать этап дела';
             ]) ?>
         </div>
     </div>
+    <?php endif; ?>
     <div class="row">
         <div class="col-sm-12"><?= $form->field($commentModel, 'content')->textarea(['rows' => 3]) ?></div>
     </div>
@@ -156,11 +158,6 @@ $this->title = 'Создать этап дела';
                         'Filemanager[token_comment]' => $token_comment,
                         'is_post' => $commentModel->isNewRecord ? 'new' : 'update'
                     ],
-                    'deleteExtraData' => [
-                        'Filemanager[id_issue]' => $id_issue,
-                        'Filemanager[token_comment]' => $token_comment,
-                        'is_post' => $commentModel->isNewRecord ? 'new' : 'update'
-                    ],
                     'msgPlaceholder' => 'Select attachments',
                     'maxFileCount' => 10,
                     'deleteUrl' => Url::to(['comment/delete-file']),
@@ -170,12 +167,6 @@ $this->title = 'Создать этап дела';
                     'filebatchselected' => 'function(event, files) {
              $(this).fileinput("upload");
              }',
-                    'fileuploaded' => 'function(event, data, previewId, index){
-             // alert( data.response.initialPreviewConfig[0].caption);
-             // uploaded_images.push(data.response.initialPreviewConfig[0].key);
-            //    console.log(uploaded_images);
-            //    $("#productsmaster-images_array").val(uploaded_images);
-              }',
                 ]
             ]); ?>
         </div>

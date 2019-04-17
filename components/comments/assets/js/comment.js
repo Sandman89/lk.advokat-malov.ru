@@ -107,7 +107,7 @@
         var $this = $(this);
         var $commentForm = $(event.data.formSelector);
         var settings = commentData[event.data.wrapperSelector].settings;
-        var parentCommentSelector = $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]');
+        var parentCommentSelector = $this.parents('#comment-' + $this.data('comment-id') + '');
         // append the comment form inside particular comment container
         $commentForm.appendTo(parentCommentSelector);
         $commentForm.find('[data-comment="parent-id"]').val($this.data('comment-id'));
@@ -139,7 +139,7 @@
     function deleteComment(event) {
         var $this = $(this);
         var settings = commentData[event.data.wrapperSelector].settings;
-
+        var pjaxSettings = $.extend({container: settings.pjaxContainerId}, settings.pjaxSettings);
         $.ajax({
             url: $this.data('url'),
             type: 'DELETE',
@@ -147,8 +147,8 @@
                 alert(error);
             },
             success: function (result, status, xhr) {
-                $this.parents('[data-comment-content-id="' + $this.data('comment-id') + '"]').find(settings.contentSelector).text(result);
-                $this.parents(settings.toolsSelector).remove();
+                $.pjax(pjaxSettings);
+
             }
         });
 

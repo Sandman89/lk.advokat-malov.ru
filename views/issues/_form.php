@@ -113,8 +113,7 @@ use kartik\select2\Select2;
                                         'class' => 'btn btn-default-outline'
                                     ],
                                     'closeButton' => [
-                                        'label' => '<i class="font-icon-close-2"></i>',
-                                        'class' => 'modal-close'
+                                        'class' => 'close modal-close'
                                     ],
                                     'autoClose' => true,
                                     'pjaxContainer' => '#client-pjax',

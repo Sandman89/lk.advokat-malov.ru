@@ -143,6 +143,8 @@ class Comment extends Widget
         $commentDataProvider = $this->getCommentDataProvider($commentClass);
 
         return $this->render($this->commentView, [
+            'token_comment' => Yii::$app->security->generateRandomString(20),
+            'id_issue' => $this->entityId,
             'commentDataProvider' => $commentDataProvider,
             'commentModel' => $commentModel,
             'maxLevel' => $this->maxLevel,

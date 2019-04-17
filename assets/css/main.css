@@ -12540,6 +12540,25 @@ body.modal-open {
     height: 50px !important;
     margin: 0 auto;
 }
+.form-control-wrapper__fileinput{
+    position: relative;
+}
+.form-control-wrapper__fileinput .file-input{
+    overflow: inherit;
+}
+.form-control-wrapper__fileinput .btn-file{
+    position: absolute;
+    bottom: -71px;
+    right: 6px;
+    z-index: 1;
+}
+.form-control-wrapper__fileinput .btn-file i{
+    line-height: 22px;
+    font-size: 1.0625rem;
+    height: 22px;
+    width: 22px;
+    padding-left: 1px;
+}
 .krajee-default .file-caption-info {
     display: inline-block;
      white-space: inherit !important;
