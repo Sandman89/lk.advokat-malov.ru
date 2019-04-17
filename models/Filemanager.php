@@ -38,7 +38,7 @@ class Filemanager extends \yii\db\ActiveRecord
         return [
             [['id_issue', 'id_comment', 'createdAt', 'updatedAt'], 'integer'],
             [['name'], 'string', 'max' => 250],
-            [['path', 'token_comment', 'ext', 'type','original_name'], 'string', 'max' => 255],
+            [['path', 'token_comment', 'ext', 'type', 'original_name'], 'string', 'max' => 255],
         ];
     }
 
@@ -85,7 +85,7 @@ class Filemanager extends \yii\db\ActiveRecord
     public function SaveTempAttachments($attachments)
     {
         $files = [];
-        $allwoedFiles = ['jpg','jpeg', 'gif', 'png', 'doc', 'docx', 'pdf', 'xlsx', 'rar', 'zip', 'xlsx', 'xls', 'txt', 'csv', 'rtf', 'one', 'pptx', 'ppsx', 'pot'];
+        $allwoedFiles = ['jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'pdf', 'xlsx', 'rar', 'zip', 'xlsx', 'xls', 'txt', 'csv', 'rtf', 'one', 'pptx', 'ppsx', 'pot'];
         if ($_FILES) {
             $tmpname = $_FILES['CommentModel']['tmp_name']['image'];
             $fname = $_FILES['CommentModel']['name']['image'];
@@ -104,22 +104,21 @@ class Filemanager extends \yii\db\ActiveRecord
                             $newFileName = \yii\helpers\Inflector::transliterate($shortname, 'Russian-Latin/BGN; Any-Latin; Latin-ASCII; NFD; [:Nonspacing Mark:] Remove; NFC;');
                             $newFileName = preg_replace('/[=\s—–-]+/u', '-', $newFileName);
                             $newFileName = strtolower($newFileName);
-                            $size = $attachments['CommentModel']['size']['image'][$i];
                             $ext = substr(strrchr($shortname, '.'), 1);
-                            $original_name = substr($shortname,0, strrpos($shortname, '.'));
+                            $original_name = substr($shortname, 0, strrpos($shortname, '.'));
                             if (in_array($ext, $allwoedFiles)) {
                                 //save the url and the file
                                 //Upload the file into the temp dir
                                 if (move_uploaded_file($tmpFilePath, 'uploads/attachment/temp/' . $newFileName)) {
                                     $true_type = self::getFileType($type[$i]);
                                     $initialPreviewConfig[] = [
-                                        'key'=>$i,
-                                        'caption'=>$original_name.'.'.$ext,
-                                        'type'=>$true_type,
-                                        'size'=>(($size/1000)),
-                                        'originalName'=>$newFileName
-                                        ];
-                                    $preview[] =  Url::base(TRUE) . '/uploads/attachment/temp/' . $newFileName;
+                                        'key' => $i,
+                                        'caption' => $original_name . '.' . $ext,
+                                        'type' => $true_type,
+                                        'originalName' => $newFileName,
+                                        'extra' => ['name' => $original_name . '.' . $ext]
+                                    ];
+                                    $preview[] = Url::base(TRUE) . '/uploads/attachment/temp/' . $newFileName;
                                     $files['initialPreview'] = $preview;
                                     $files['initialPreviewAsData'] = true;
                                     // $files['uploadExtraData'][]['is_post'] = 'new';
@@ -145,13 +144,13 @@ class Filemanager extends \yii\db\ActiveRecord
      */
     public static function getFileType($_filetype)
     {
-        if ((preg_match('/(tiff?|wmf)/', $_filetype))||(preg_match('/(gif|png|jpe?g)/', $_filetype)))
+        if ((preg_match('/(tiff?|wmf)/', $_filetype)) || (preg_match('/(gif|png|jpe?g)/', $_filetype)))
             return 'image';
         if (preg_match('/(htm|html)/', $_filetype))
             return 'html';
-        if ((preg_match('/(word|excel|powerpoint|office)/', $_filetype))||(preg_match('/(docx?|xlsx?|pptx?|pps|potx?|rtf)/', $_filetype)))
+        if ((preg_match('/(word|excel|powerpoint|office)/', $_filetype)) || (preg_match('/(docx?|xlsx?|pptx?|pps|potx?|rtf)/', $_filetype)))
             return 'office';
-        if ((preg_match('/(xml|javascript|text)/', $_filetype))||(preg_match('/(txt|md|csv|nfo|ini|json|php|js|css)/', $_filetype)))
+        if ((preg_match('/(xml|javascript|text)/', $_filetype)) || (preg_match('/(txt|md|csv|nfo|ini|json|php|js|css)/', $_filetype)))
             return 'text';
         if (preg_match('/(pdf)/', $_filetype))
             return 'pdf';
@@ -161,8 +160,13 @@ class Filemanager extends \yii\db\ActiveRecord
     /**
      * @param Filemanager $file
      */
-    public static function getLinkFileType($file){
+    public static function getLinkFileType($file)
+    {
         if ($file->type == "office")
-            return;
+            return '<a target="_blank" href="https://view.officeapps.live.com/op/embed.aspx?src=' . Url::base(TRUE) . $file->path . '">Смотреть</a>';
+        if (($file->type == "pdf") || ($file->type == "text"))
+            return '<a target="_blank" href="https://docs.google.com/viewer?url=' . Url::base(TRUE) . $file->path . '&embedded=true">Смотреть</a>';
+        return '';
+
     }
 }

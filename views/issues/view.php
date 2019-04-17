@@ -104,7 +104,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 <div class="col-sm-12">
                     <h5 class="m-b-md">Хронология выполнения дела</h5>
                     <?php echo  \app\components\comments\Comment::widget([
-                        'model' => $model
+                        'model' => $model,
+                        'maxLevel'=>20
                     ]); ?>
                     <?php /*echo \yii2mod\comments\widgets\Comment::widget([
                         'model' => $model,
