@@ -109,7 +109,15 @@
         var settings = commentData[event.data.wrapperSelector].settings;
         var parentCommentSelector = $this.parents('#comment-' + $this.data('comment-id') + '');
         // append the comment form inside particular comment container
-        $commentForm.appendTo(parentCommentSelector);
+        if ($this.hasClass('comment-reply-workflow')){
+            if (parentCommentSelector.find('.workflow-comments').length > 0)
+                $commentForm.prependTo(parentCommentSelector.find('.workflow-comments .children.level-1'));
+            else
+                $commentForm.appendTo(parentCommentSelector.find('.workflow-content_padding'));
+        }
+
+        else
+            $commentForm.appendTo(parentCommentSelector);
         $commentForm.find('[data-comment="parent-id"]').val($this.data('comment-id'));
         $commentForm.find(settings.cancelReplyBtnSelector).show();
 

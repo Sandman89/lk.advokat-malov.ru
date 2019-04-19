@@ -13,7 +13,7 @@ use yii\helpers\Url;
  */
 
 $this->title = 'Создать этап дела';
-$is_workflow = (!empty($commentModel->title)) ? true : false;
+$is_workflow = (!empty($commentModel->title) || ($commentModel->isNewRecord)) ? true : false;
 ?>
 
 

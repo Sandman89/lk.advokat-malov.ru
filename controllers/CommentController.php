@@ -84,7 +84,7 @@ class CommentController extends Controller
                 'actions' => [
                     //'create' => ['post'],
                     //'create-workflow' => ['post'],
-                    'delete' => ['post', 'delete'],
+                  //  'delete' => ['delete'],
                 ],
             ],
             'contentNegotiator' => [
@@ -135,7 +135,7 @@ class CommentController extends Controller
             $file = Filemanager::find()->where(['id' => $key])->one();
         } else {
             $name = $_POST['name'];
-            $file = Filemanager::find()->where(['name' => $name])->one();
+            $file = Filemanager::find()->where(['name' => $name,'id_comment'=>null])->one();
         }
 
         unlink(Yii::getAlias('@webroot') . $file->path);
@@ -348,7 +348,7 @@ class CommentController extends Controller
     function actionDelete($id)
     {
         $commentModel = CommentModel::findOne($id);
-        if ($commentModel->markRejected()) {
+        if (($commentModel->parentId == null) ? $commentModel->deleteWithChildren() : $commentModel->delete()) {
             return Yii::t('yii2mod.comments', 'Comment has been deleted.');
         } else {
             Yii::$app->response->setStatusCode(500);

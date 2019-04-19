@@ -100,9 +100,9 @@ $this->params['breadcrumbs'][] = $this->title;
                     <?= \app\components\AssignWidget::widget(['users' => $model->assigns, 'title' => 'Ответственные по делу']) ?>
                 </div>
             </div>
-            <div class="row">
+            <div class="row p-t-lg">
                 <div class="col-sm-12">
-                    <h5 class="m-b-md">Хронология выполнения дела</h5>
+                    <h5 class="m-b-md float-left">Хронология выполнения дела</h5>
                     <?php echo  \app\components\comments\Comment::widget([
                         'model' => $model,
                         'maxLevel'=>20

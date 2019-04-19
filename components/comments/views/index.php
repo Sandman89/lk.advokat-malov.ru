@@ -47,7 +47,8 @@ use yii\helpers\Html;
     'ajaxSubmit' => true,
 ]);
 ?>
-<?php echo Html::a('Добавить',['/comment/create-workflow', 'entity' => $encryptedEntity],['class'=>'btn btn-success lo-modal' ]); ?>
+<?php echo Html::a('<span class="pluso">+</span>Добавить',['/comment/create-workflow', 'entity' => $encryptedEntity],['class'=>'btn btn-success lo-modal float-right' ]); ?>
+<div class="clearfix"></div>
 <div class="comment-wrapper" id="<?php echo $commentWrapperId; ?>">
     <?php Pjax::begin(['enablePushState' => true, 'timeout' => 2000, 'id' => $pjaxContainerId]); ?>
     <div class="comments row">

@@ -8,18 +8,19 @@ use yii2mod\editable\Editable;
 /* @var $model app\components\comments\models\CommentModel $commentModel */
 /* @var $maxLevel null|integer comments max level */
 ?>
-<li class="comment" id="comment-<?php echo $model->id; ?>">
-    <?php if ($model->level == 1) : ?>
+
+<?php if ($model->level == 1) : ?>
+    <li class="comment comment-level-<?php echo $model->level; ?>" id="comment-<?php echo $model->id; ?>">
         <div class="list-activity-date">
             <?php echo $model->getPostedDate(); ?>
         </div>
         <div class="workflow-content" data-comment-content-id="<?php echo $model->id ?>">
-            <div class="">
+            <div class="workflow-content_padding">
                 <div class="comment-action-buttons">
 
                     <?php echo Html::a('<span class="font-icon font-icon-trash"></span> ' . Yii::t('yii2mod.comments', 'Delete'), '#', ['data' => ['action' => 'delete', 'url' => Url::to(['/comment/delete', 'id' => $model->id]), 'comment-id' => $model->id]]); ?>
                     <?php if (!Yii::$app->user->isGuest && ($model->level < $maxLevel || is_null($maxLevel))) : ?>
-                        <?php echo Html::a("<span class='font-icon font-icon-comment'></span> " . Yii::t('yii2mod.comments', 'Reply'), '#', ['class' => 'comment-reply', 'data' => ['action' => 'reply', 'comment-id' => $model->id]]); ?>
+                        <?php echo Html::a("<span class='font-icon font-icon-comment'></span> " . Yii::t('yii2mod.comments', 'Reply'), '#', ['class' => 'comment-reply comment-reply-workflow', 'data' => ['action' => 'reply', 'comment-id' => $model->id]]); ?>
                     <?php endif; ?>
                     <?php echo Html::a('<span class="glyphicon glyphicon-pencil "></span> Редактировать', ['/comment/update', 'id' => $model->id], ['class' => 'lo-modal lo-modal-edit']); ?>
                 </div>
@@ -51,8 +52,21 @@ use yii2mod\editable\Editable;
                 </div>
 
             </div>
+            <?php if ($model->hasChildren()) : ?>
+
+                <span class="font-16 comment-separete-text">Комментарии:</span>
+                <div class="workflow-comments">
+                    <ul class="children level-<?= $model->level ?>">
+                        <?php foreach ($model->getChildren() as $children) : ?>
+                            <?php echo $this->render('_list', ['model' => $children, 'maxLevel' => $maxLevel]) ?>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
         </div>
-    <?php else: ?>
+    </li>
+<?php else: ?>
+    <li class="comment comment-level-<?php echo $model->level; ?>" id="comment-<?php echo $model->id; ?>">
         <div class="comment-content" data-comment-content-id="<?php echo $model->id ?>">
             <div class="comment-author-avatar">
                 <?php echo Html::img($model->getAvatar(), ['alt' => $model->getAuthorName()]); ?>
@@ -92,15 +106,18 @@ use yii2mod\editable\Editable;
                     <?php endif; ?>
                 </div>
             </div>
+
         </div>
+    </li>
+    <?php if ($model->hasChildren()) : ?>
+        <ul class="children level-<?= $model->level ?>">
+            <?php foreach ($model->getChildren() as $children) : ?>
+                <li class="comment" id="comment-<?php echo $children->id; ?>">
+                    <?php echo $this->render('_list', ['model' => $children, 'maxLevel' => $maxLevel]) ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
     <?php endif; ?>
-</li>
-<?php if ($model->hasChildren()) : ?>
-    <ul class="children level-<?= $model->level ?>">
-        <?php foreach ($model->getChildren() as $children) : ?>
-            <li class="comment" id="comment-<?php echo $children->id; ?>">
-                <?php echo $this->render('_list', ['model' => $children, 'maxLevel' => $maxLevel]) ?>
-            </li>
-        <?php endforeach; ?>
-    </ul>
 <?php endif; ?>
+
+

@@ -1,6 +1,6 @@
 /* Comments */
 .comments {
-    margin: 40px 0 40px 0;
+    margin: 15px 0 40px 0;
 }
 
 .comments .comments-list {
@@ -10,11 +10,11 @@
 
 .comments .comment-author-avatar {
     float: left;
-    width: 60px;
+    width: 42px;
 }
 
 .comments .comment-details {
-    padding-left: 78px;
+    padding-left: 57px;
 }
 
 .comments .comment-content {
@@ -42,13 +42,14 @@
 .comments .comment-date {
     font-size: 14px;
     color: #979797;
-    margin-left: 15px;
+    margin-left: 8px;
     font-weight: normal;
+    display: inline-block;
 }
 
 .comments .comment-author-name {
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
     margin: 0 0 5px 0;
 }
 
@@ -57,18 +58,34 @@
     /*padding-left: 78px;*/
 }
 .comments-list .children {
-    margin: 20px 0 0 0;
-    padding-left: 78px;
+    margin: 0;
+    padding-left: 55px;
 }
-.comments-list>.children{
+.children.level-1{
+    padding-left: 20px;
+    padding-right: 20px;
+}
+.comments .children.level-1 .comment-content{
     padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    padding-top: 35px;
 }
 .comments-list .comment {
     position: relative;
+}
+.comments-list .comment-level-1{
     margin: 0 0 20px 0;
 }
-
-
+.comment-body{
+    color: #6c7a86;
+}
+.workflow-comments{
+    padding-bottom: 20px;
+}
+.workflow-comments .comment:first-child>.comment-content{
+    padding-top: 20px;
+}
 .comments .comment-author-avatar img {
     border: 1px solid #e2e2e2;
 }
@@ -97,13 +114,13 @@
 .comment-action-buttons a {
     font-weight: normal;
     font-size: 14px;
-    color: rgba(0, 0, 0, 0.63);
+    color: #a4acb1;
     padding: 5px;
 }
 
 .comment-action-buttons a:hover {
     text-decoration: none;
-    color: rgba(0, 0, 0, 0.63);
+    color: #0082c6;
 }
 
 .comment-action-buttons a:focus {
@@ -126,39 +143,45 @@
     overflow: auto;
 }
 
-.comment-box .comment-box-partial .comment-submit {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    font-size: 12px;
-    font-weight: normal;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-    padding: 0 15px;
-    border: 1px solid #008cc9;
-    border-radius: 3px;
-    height: 26px;
-    line-height: 26px;
-    cursor: pointer;
-    white-space: nowrap;
+.comment-box .field-commentmodel-content{
+    margin-bottom: 5px;
+}
+.comment-box .file-input{
     display: block;
-    color: #fff !important;
-    background: #008cc9 0 0;
-    -webkit-transition: all .2s ease-in-out;
-    -moz-transition: all .2s ease-in-out;
-    -o-transition: all .2s ease-in-out;
-    transition: all .2s ease-in-out;
-    margin: 10px 0 0;
+    position: initial;
+margin: 0;
 }
 
-.comment-submit:focus {
-    outline: none !important;
+.comment-box .btn-file{
+    position: absolute;
+    right: 8px;
+    bottom: 3px;
+    cursor: pointer;
+}
+.comment-box .file-input input[type=file]{
+    position: absolute;
+    top: 0;
+    left: -420px;
+    min-width: inherit;
+    min-height: inherit;
+    font-size: 16px;
+    text-align: right;
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: pointer;
+    display: block;
+}
+.comment-box .btn-file i{
+    cursor: pointer;
+}
+.comment-box .btn-file:hover>i{
+    color:  #00aaed !important;
+}
+.comment-box .button-container{
+    position: relative;
 }
 
-.comment-box .comment-box-partial .comment-submit:hover {
-    background: #187BA7;
-}
 
 #cancel-reply {
     display: none;

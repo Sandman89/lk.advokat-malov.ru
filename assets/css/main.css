@@ -5460,7 +5460,7 @@ h6 {
 }
 
 .grey-text {
-    color: #adb7be;
+    color: #a4acb1;
 }
 
 i.grey-text {
@@ -8094,7 +8094,9 @@ hr.margin-4 {
 
 .btn.btn-success {
     background-color: #6c72fb;
-    border-color: #6c72fb
+    border-color: #6c72fb;
+    min-width: 140px;
+
 }
 
 .btn.btn-success:active, .btn.btn-success:hover {
@@ -9436,7 +9438,8 @@ a.label-light-grey:hover {
     cursor: inherit;
     display: block;
 }
-
+.krajee-default.file-preview-frame{border: solid 2px #dbe4ea;box-shadow: none;border-radius: 4px}
+.krajee-default.file-preview-frame:not(.file-preview-error):hover{border: solid 2px #00a8ff;box-shadow: none;}
 .alert h1, .alert h2, .alert h3, .alert h4, .alert h5, .alert h6, .alert strong {
     font-weight: 600
 }
@@ -12525,9 +12528,18 @@ body.modal-open {
     border-radius: 6px;
     background: #fff;
     border: solid 1px #eff0f5;
+}
+.workflow-content_padding{
     padding: 15px;
 }
-
+.comment-separete-text{
+    background: #fbfbfb;
+    padding: 12px 15px;
+    border-top: solid 1px #eaeaea;
+    border-bottom: solid 1px #eaeaea;
+    font-weight: 600;
+    display: block;
+}
 .comment-title {
     font-weight: 600;
 }
@@ -12545,6 +12557,7 @@ body.modal-open {
 }
 .form-control-wrapper__fileinput .file-input{
     overflow: inherit;
+    margin: 0;
 }
 .form-control-wrapper__fileinput .btn-file{
     position: absolute;
@@ -12565,7 +12578,7 @@ body.modal-open {
     overflow:visible !important;
      text-overflow: inherit!important;
      width: inherit !important;
-     height: 39px !important;
+     height:  auto ;
     margin: auto;
     max-width: 155px;
     font-size: 14px;
@@ -12583,7 +12596,7 @@ body.modal-open {
     max-width: 300px;
     vertical-align: top;
     position: relative;
-    padding: 0 30px 0 60px;
+    padding: 0 30px 0 50px;
     height: 54px;
     font-size: .9375rem;
     line-height: 18px;
@@ -12591,7 +12604,7 @@ body.modal-open {
 }
 
 i.font-icon-attachment-type {
-    font-size: 2.875rem;
+    font-size: 2.375rem;
     position: absolute;
     left: 0;
     top: 7px;
@@ -12600,18 +12613,26 @@ i.font-icon-attachment-type {
 }
 
 .attachments-element_ext {
-    font-size: 14px;
+    font-size: 12px;
     position: absolute;
     right: -2px;
-    bottom: 12px;
+    bottom: 10px;
     color: white;
-    padding: 4px 4px;
+    padding: 3px 4px;
     background: #566c7e;
     line-height: 10px;
     border-radius: 3px;
     font-style: normal;
 }
-
+.pluso{
+    font-size: 20px;
+    display: inline;
+    font-family: initial;
+    line-height: 16px;
+    vertical-align: text-top;
+    padding-right: 3px;
+    font-family: 'Tahoma';
+}
 .attachments-element_ext.ext_jpg {
     background: #f6702e;
 }
@@ -12667,7 +12688,6 @@ i.font-icon-attachment-type {
 
 .attachments-element_name {
     font-weight: 600;
-    min-height: 36px;
 }
 
 .comment-rows-container {
