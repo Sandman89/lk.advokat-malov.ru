@@ -7,6 +7,7 @@ use yii2mod\editable\Editable;
 /* @var $this \yii\web\View */
 /* @var $model app\components\comments\models\CommentModel $commentModel */
 /* @var $maxLevel null|integer comments max level */
+/* @var $statusWorkObject string */
 ?>
 
 <?php if ($model->level == 1) : ?>
@@ -17,12 +18,15 @@ use yii2mod\editable\Editable;
         <div class="workflow-content" data-comment-content-id="<?php echo $model->id ?>">
             <div class="workflow-content_padding">
                 <div class="comment-action-buttons">
-
-                    <?php echo Html::a('<span class="font-icon font-icon-trash"></span> ' . Yii::t('yii2mod.comments', 'Delete'), '#', ['data' => ['action' => 'delete', 'url' => Url::to(['/comment/delete', 'id' => $model->id]), 'comment-id' => $model->id]]); ?>
-                    <?php if (!Yii::$app->user->isGuest && ($model->level < $maxLevel || is_null($maxLevel))) : ?>
-                        <?php echo Html::a("<span class='font-icon font-icon-comment'></span> " . Yii::t('yii2mod.comments', 'Reply'), '#', ['class' => 'comment-reply comment-reply-workflow', 'data' => ['action' => 'reply', 'comment-id' => $model->id]]); ?>
+                    <?php if ($statusWorkObject != 'completed') : ?>
+                        <?php if ($model->isOwner()) : ?>
+                            <?php echo Html::a('<span class="font-icon font-icon-trash"></span> ' . Yii::t('yii2mod.comments', 'Delete'), '#', ['data' => ['action' => 'delete', 'url' => Url::to(['/comment/delete', 'id' => $model->id]), 'comment-id' => $model->id]]); ?>
+                            <?php echo Html::a('<span class="glyphicon glyphicon-pencil "></span> Редактировать', ['/comment/update', 'id' => $model->id], ['class' => 'lo-modal lo-modal-edit']); ?>
+                        <?php endif; ?>
+                        <?php if (!Yii::$app->user->isGuest && ($model->level < $maxLevel || is_null($maxLevel))) : ?>
+                            <?php echo Html::a("<span class='font-icon font-icon-comment'></span> " . Yii::t('yii2mod.comments', 'Reply'), '#', ['class' => 'comment-reply comment-reply-workflow', 'data' => ['action' => 'reply', 'comment-id' => $model->id]]); ?>
+                        <?php endif; ?>
                     <?php endif; ?>
-                    <?php echo Html::a('<span class="glyphicon glyphicon-pencil "></span> Редактировать', ['/comment/update', 'id' => $model->id], ['class' => 'lo-modal lo-modal-edit']); ?>
                 </div>
                 <div class="comment-body">
                     <div class="comment-title">
@@ -58,7 +62,7 @@ use yii2mod\editable\Editable;
                 <div class="workflow-comments">
                     <ul class="children level-<?= $model->level ?>">
                         <?php foreach ($model->getChildren() as $children) : ?>
-                            <?php echo $this->render('_list', ['model' => $children, 'maxLevel' => $maxLevel]) ?>
+                            <?php echo $this->render('_list', ['model' => $children, 'maxLevel' => $maxLevel,'statusWorkObject'=>$statusWorkObject]) ?>
                         <?php endforeach; ?>
                     </ul>
                 </div>
@@ -73,14 +77,15 @@ use yii2mod\editable\Editable;
             </div>
             <div class="comment-details">
                 <div class="comment-action-buttons">
-
-                    <?php if (1 == 1) : //Yii::$app->getUser()->can('admin')) : ?>
-                        <?php echo Html::a('<span class="font-icon font-icon-trash"></span> ' . Yii::t('yii2mod.comments', 'Delete'), '#', ['data' => ['action' => 'delete', 'url' => Url::to(['/comment/delete', 'id' => $model->id]), 'comment-id' => $model->id]]); ?>
+                    <?php if ($statusWorkObject != 'completed') : ?>
+                        <?php if ($model->isOwner()) : ?>
+                            <?php echo Html::a('<span class="font-icon font-icon-trash"></span> ' . Yii::t('yii2mod.comments', 'Delete'), '#', ['data' => ['action' => 'delete', 'url' => Url::to(['/comment/delete', 'id' => $model->id]), 'comment-id' => $model->id]]); ?>
+                            <?php echo Html::a('<span class="glyphicon glyphicon-pencil "></span> Редактировать', ['/comment/update', 'id' => $model->id], ['class' => 'lo-modal lo-modal-edit']); ?>
+                        <?php endif; ?>
+                        <?php if (!Yii::$app->user->isGuest && ($model->level < $maxLevel || is_null($maxLevel))) : ?>
+                            <?php echo Html::a("<span class='glyphicon glyphicon-share-alt'></span> " . Yii::t('yii2mod.comments', 'Reply'), '#', ['class' => 'comment-reply', 'data' => ['action' => 'reply', 'comment-id' => $model->id]]); ?>
+                        <?php endif; ?>
                     <?php endif; ?>
-                    <?php if (!Yii::$app->user->isGuest && ($model->level < $maxLevel || is_null($maxLevel))) : ?>
-                        <?php echo Html::a("<span class='glyphicon glyphicon-share-alt'></span> " . Yii::t('yii2mod.comments', 'Reply'), '#', ['class' => 'comment-reply', 'data' => ['action' => 'reply', 'comment-id' => $model->id]]); ?>
-                    <?php endif; ?>
-                    <?php echo Html::a('<span class="glyphicon glyphicon-pencil "></span> Редактировать', ['/comment/update', 'id' => $model->id], ['class' => 'lo-modal lo-modal-edit']); ?>
                 </div>
                 <div class="comment-author-name">
                     <span><?php echo $model->getAuthorName(); ?></span>
@@ -113,7 +118,7 @@ use yii2mod\editable\Editable;
         <ul class="children level-<?= $model->level ?>">
             <?php foreach ($model->getChildren() as $children) : ?>
                 <li class="comment" id="comment-<?php echo $children->id; ?>">
-                    <?php echo $this->render('_list', ['model' => $children, 'maxLevel' => $maxLevel]) ?>
+                    <?php echo $this->render('_list', ['model' => $children, 'maxLevel' => $maxLevel,'statusWorkObject'=>$statusWorkObject]) ?>
                 </li>
             <?php endforeach; ?>
         </ul>

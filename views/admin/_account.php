@@ -14,16 +14,30 @@ use yii\helpers\Html;
 
 /**
  * @var yii\web\View $this
+ * @var bool $role
  * @var dektrium\user\models\User $user
  */
 ?>
 
-<?php $this->beginContent('@app/views/admin/update.php', ['user' => $user]) ?>
 
+<?php if ($user->scenario != 'settings') {
+    $this->beginContent('@app/views/admin/update.php', ['user' => $user]);
+} else {
+    $this->title = Yii::t('user', 'Account settings');
+    $this->params['breadcrumbs'][] = $this->title;
+    $this->render('/_alert', ['module' => Yii::$app->getModule('user')]);
+}
+?>
+
+<?php if ($user->scenario == 'settings'): ?>
+    <header class="section-header">
+        <h3><?= Html::encode($this->title) ?></h3>
+    </header>
+<?php endif ?>
 <?php $form = ActiveForm::begin([
     'enableAjaxValidation' => true,
     'enableClientValidation' => false,
-    'options' => ['class' => 'form-horizontal','enctype' => 'multipart/form-data'],
+    'options' => ['class' => 'form-horizontal', 'enctype' => 'multipart/form-data'],
     'fieldConfig' => [
         'options' => ['class' => 'form-group row'],
         'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper">{input}{error}</div></div>',
@@ -32,7 +46,7 @@ use yii\helpers\Html;
     ],
 ]); ?>
 <div class="box-typical box-typical-padding">
-    <?= $this->render('_user', ['form' => $form, 'user' => $user]) ?>
+    <?= $this->render('_user', ['form' => $form, 'user' => $user,'role'=>$role]) ?>
 
     <div class="form-group-buttons row">
         <div class="col-sm-12 text-center">
@@ -42,7 +56,6 @@ use yii\helpers\Html;
 </div>
 
 
-
 <?php ActiveForm::end(); ?>
 
-<?php $this->endContent() ?>
+<?php if ($user->scenario != 'settings') $this->endContent() ?>

@@ -79,6 +79,16 @@
         $.post($commentForm.attr('action'), formData, function (data) {
             if (data.status == 'success') {
                 $.pjax(pjaxSettings);
+               /* var jScrollOptions_to_bottom = {
+                    maintainPosition:true,
+                    stickToBottom:true,
+                    autoReinitialise: true,
+                    autoReinitialiseDelay: 100,
+                    contentWidth: '0px'
+                };
+                setTimeout(function(){
+                    $('.scrollable-block').jScrollPane(jScrollOptions_to_bottom).data('jsp').scrollToBottom();
+                },500);*/
             }
             // errors handling
             else {

@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\components\fullcalendar\models\Event;
 use app\models\Filemanager;
 use Yii;
 use yii\filters\AccessControl;
@@ -71,7 +72,7 @@ class CommentController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::class,
-                'only' => ['quick-edit', 'delete', 'create-workflow', 'upload'],
+                'only' => ['quick-edit', 'delete', 'comment-ajax', 'upload'],
                 'rules' => [
                     [
                         'allow' => true,
@@ -83,8 +84,8 @@ class CommentController extends Controller
                 'class' => VerbFilter::class,
                 'actions' => [
                     //'create' => ['post'],
-                    //'create-workflow' => ['post'],
-                  //  'delete' => ['delete'],
+                    //'comment-ajax' => ['post'],
+                    //  'delete' => ['delete'],
                 ],
             ],
             'contentNegotiator' => [
@@ -135,7 +136,8 @@ class CommentController extends Controller
             $file = Filemanager::find()->where(['id' => $key])->one();
         } else {
             $name = $_POST['name'];
-            $file = Filemanager::find()->where(['name' => $name,'id_comment'=>null])->one();
+            $original_name = substr($name, 0, strrpos($name, '.'));
+            $file = Filemanager::find()->where(['original_name' => $original_name, 'id_comment' => null])->one();
         }
 
         unlink(Yii::getAlias('@webroot') . $file->path);
@@ -150,36 +152,21 @@ class CommentController extends Controller
      */
     public function actionUpdate($id)
     {
+        $complete = false;
         $commentModel = CommentModel::findOne($id);
         if ($commentModel->title)
             $commentModel->scenario = 'workflow';
-        //если есть файлы у комментария, то делаем перевод файлов в правильную папку
+        //для вывода в превью при обновлении записии
         $files = Filemanager::find()->where(['token_comment' => $commentModel->token_comment])->all();
         if ($commentModel->load(\Yii::$app->request->post())) {
             if ($commentModel->saveComment()) {
-                //если есть файлы у комментария, которые еще не сохранены
-                $files = Filemanager::find()->where(['token_comment' => $commentModel->token_comment, 'id_comment' => null])->all();
-                if (count($files) > 0) {
-                    $root = Yii::getAlias('@webroot');
-                    $newFilePath = '/attachments/' . $commentModel->entityId . '_' . self::RandomString($commentModel->entityId);
-                    foreach ($files as $file) {
-                        //создаем новую папку для соответствующего дела и переносим туда файл из комментария
-                        if (!is_dir($root . $newFilePath)) {
-                            mkdir($root . $newFilePath, 0755, true);
-                        }
-                        rename($root . $file->path, $root . $newFilePath . '/' . $file->name);
-                        //обновляем путь до файла в таблице файлов
-                        $file->path = $newFilePath . '/' . $file->name;
-                        //устанавливаем id коммент для ссылки
-                        $file->id_comment = $commentModel->id;
-                        $file->update(false);
-                    }
-                }
+                //если есть временные файлы у комментария, которые еще не сохранены. То переносим их в постоянную папку
+                Filemanager::SaveConstAttachment($commentModel);
                 if (Yii::$app->request->isAjax) {
                     Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
                     return $commentModel->id;
                 } else {
-                    return $this->redirect(['create-workflow']);
+                    return $this->redirect(['comment-ajax']);
                 }
             } else {
                 var_dump($commentModel->errors);
@@ -191,99 +178,68 @@ class CommentController extends Controller
                 'commentModel' => $commentModel,
                 'files' => $files,
                 'id_issue' => $commentModel->entityId,
-                'token_comment' => $commentModel->token_comment
-            ]);
-        } else {
-            return $this->render('@app/components/comments/views/workflow', [
-                'commentModel' => $commentModel,
-                'files' => $files,
-                'id_issue' => $commentModel->entityId,
-                'token_comment' => $commentModel->token_comment
+                'token_comment' => $commentModel->token_comment,
+                'complete' => $complete,
             ]);
         }
     }
 
     /**
      * Create a workflow
-     *
+     * получаем на вход $type комментария. По ним строится логика. Какой тип комментариев будет
      * @return array
      */
-    public function actionCreateWorkflow($entity)
+    public function actionCommentAjax($entity = null, $type = null, $lomodal = false)
     {
-        /* @var $commentModel CommentModel */
         $id_issue = '';
-        $token_comment = '';
-        if (!empty($entity))
+        $complete = false;
+        if ($entity)
             $id_issue = $this->getCommentAttributesFromEntity($entity)['entityId'];
         //token comment - params for synchronics file and NEW commend
         $token_comment = Yii::$app->security->generateRandomString(20);
         $commentModel = new CommentModel();
-        $commentModel->scenario = 'workflow';
         $commentModel->token_comment = $token_comment;
+        if ($type != null) {
+            if ($type == 'complete') {
+                $complete = true;
+                $commentModel->type = 'complete';
+            }
+            if ($type == 'workflow') {
+                $commentModel->scenario = 'workflow';
+            }
+        }
         if ($commentModel->load(\Yii::$app->request->post())) {
             $commentModel->setAttributes($this->getCommentAttributesFromEntity($entity));
             if ($commentModel->saveComment()) {
-                //если есть файлы у комментария, то делаем перевод файлов в правильную папку
-                $files = Filemanager::find()->where(['token_comment' => $commentModel->token_comment])->all();
-                if (count($files) > 0) {
-                    $root = Yii::getAlias('@webroot');
-                    $newFilePath = '/attachments/' . $id_issue . '_' . self::RandomString($id_issue);
-                    foreach ($files as $file) {
-                        //создаем новую папку для соответствующего дела и переносим туда файл из комментария
-                        if (!is_dir($root . $newFilePath)) {
-                            mkdir($root . $newFilePath, 0755, true);
-                        }
-                        rename($root . $file->path, $root . $newFilePath . '/' . $file->name);
-                        //обновляем путь до файла в таблице файлов
-                        $file->path = $newFilePath . '/' . $file->name;
-                        //устанавливаем id коммент для ссылки
-                        $file->id_comment = $commentModel->id;
-                        $file->update(false);
-                    }
-                }
-
+                //если есть временные файлы у комментария, которые еще не сохранены. То переносим их в постоянную папку
+                Filemanager::SaveConstAttachment($commentModel);
                 if (Yii::$app->request->isAjax) {
                     Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+                    if ($commentModel->type == 'complete') {
+                        if ($lomodal)//если был запрос из модального окна. Тогда редирект делать нельзя, нужно вернуть id issue
+                                return $id_issue;
+                        else{
+                            \Yii::$app->getSession()->setFlash('success', 'Задача № ' . $id_issue . ' была помещена в архив');
+                            return $this->redirect(['task/view', 'id' => $id_issue]);
+                        }
+                    }
                     return $commentModel->id;
+
                 } else {
-                    return $this->redirect(['create-workflow']);
+                    return $this->redirect(['comment-ajax']);
                 }
-            } else {
-                var_dump($commentModel->errors);
-                die();
             }
         }
         if (Yii::$app->request->isAjax) {
             return $this->renderAjax('@app/components/comments/views/workflow', [
                 'commentModel' => $commentModel,
                 'id_issue' => $id_issue,
-                'token_comment' => $token_comment
-            ]);
-        } else {
-            return $this->render('@app/components/comments/views/workflow', [
-                'commentModel' => $commentModel,
-                'id_issue' => $id_issue,
-                'token_comment' => $token_comment
+                'token_comment' => $token_comment,
+                'complete' => $complete,
             ]);
         }
     }
 
-    /**
-     * @return string
-     */
-    public static function RandomString($number)
-    {
-        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $randstring = '';
-        for ($i = 0; $i < 10; $i++) {
-            if (($i + 1) * $number > 52)
-                $num_char = 52 - ((($i + 1) * $number) % 52);
-            else
-                $num_char = 52 - ($i + 1) * $number;
-            $randstring .= $characters[$num_char];
-        }
-        return $randstring;
-    }
 
     /**
      * Create a comment.
@@ -297,40 +253,20 @@ class CommentController extends Controller
     {
         /* @var $commentModel CommentModel */
         $commentModel = new CommentModel();
-
         $event = Yii::createObject(['class' => CommentEvent::class, 'commentModel' => $commentModel]);
-
         $commentModel->setAttributes($this->getCommentAttributesFromEntity($entity));
         $this->trigger(self::EVENT_BEFORE_CREATE, $event);
         if ($commentModel->load(Yii::$app->request->post())) {
             if ($commentModel->saveComment()) {
-                //если есть файлы у комментария, то делаем перевод файлов в правильную папку
-                $files = Filemanager::find()->where(['token_comment' => $commentModel->token_comment])->all();
-                if (count($files) > 0) {
-                    $root = Yii::getAlias('@webroot');
-                    $newFilePath = '/attachments/' . $commentModel->entityId . '_' . self::RandomString($commentModel->entityId);
-                    foreach ($files as $file) {
-                        //создаем новую папку для соответствующего дела и переносим туда файл из комментария
-                        if (!is_dir($root . $newFilePath)) {
-                            mkdir($root . $newFilePath, 0755, true);
-                        }
-                        rename($root . $file->path, $root . $newFilePath . '/' . $file->name);
-                        //обновляем путь до файла в таблице файлов
-                        $file->path = $newFilePath . '/' . $file->name;
-                        //устанавливаем id коммент для ссылки
-                        $file->id_comment = $commentModel->id;
-                        $file->update(false);
-                    }
-                }
+                //если есть временные файлы у комментария, которые еще не сохранены. То переносим их в постоянную папку
+                Filemanager::SaveConstAttachment($commentModel);
                 $this->trigger(self::EVENT_AFTER_CREATE, $event);
                 return ['status' => 'success'];
             } else {
                 var_dump($commentModel->errors);
                 die();
             }
-
         }
-
         return [
             'status' => 'error',
             'errors' => ActiveForm::validate($commentModel),

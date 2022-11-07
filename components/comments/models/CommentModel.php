@@ -18,8 +18,6 @@ use yii\db\ActiveRecord;
 use yii\helpers\ArrayHelper;
 use yii2mod\behaviors\PurifyBehavior;
 use yii2mod\moderation\enums\Status;
-use yii2mod\moderation\ModerationBehavior;
-use yii2mod\moderation\ModerationQuery;
 use omnilight\datetime\DateTimeBehavior;
 
 /**
@@ -41,11 +39,11 @@ use omnilight\datetime\DateTimeBehavior;
  * @property int $updatedAt
  * @property string $token_comment
  * @property string $title
+ * @property string $type
  *
  * @method ActiveRecord makeRoot()
  * @method ActiveRecord appendTo($node)
  * @method ActiveQuery getDescendants()
- * @method ModerationBehavior markRejected()
  * @method AdjacencyListBehavior deleteWithChildren()
  */
 class CommentModel extends ActiveRecord
@@ -83,6 +81,13 @@ class CommentModel extends ActiveRecord
         return '{{%comment}}';
     }
 
+    /*  public function scenarios()
+      {
+          $scenarios = parent::scenarios();
+          $scenarios['workflow'] = ['content', 'title','createdAt_local','image','relatedTo','entityId','parentId','url'];
+          $scenarios['complete'] = ['content','createdAt_local','image','relatedTo','entityId','parentId','url'];
+          return $scenarios;
+      }*/
     /**
      * @inheritdoc
      */
@@ -90,12 +95,13 @@ class CommentModel extends ActiveRecord
     {
         return [
             //[['entity', 'entityId'], 'required'],
-            ['content', 'required', 'message' => Yii::t('yii2mod.comments', 'Comment cannot be blank.'),'except'=>['workflow']],
+            ['content', 'required', 'message' => Yii::t('yii2mod.comments', 'Comment cannot be blank.'), 'except' => ['workflow', 'complete']],
             [['title', 'createdAt_local'], 'required', 'on' => ['workflow']],
-            [['content', 'entity', 'relatedTo', 'url', 'token_comment', 'title'], 'string'],
+            ['type', 'default', 'value' => 'workflow', 'on' => ['workflow']],
+            [['content', 'entity', 'relatedTo', 'url', 'token_comment', 'title', 'type'], 'string'],
             ['status', 'default', 'value' => Status::APPROVED],
             ['status', 'in', 'range' => Status::getConstantsByName()],
-            [['image', 'createdAt', 'customcreatedAt', 'createdAt_local'], 'safe'],
+            [['image', 'createdAt', 'customcreatedAt', 'createdAt_local', 'url', 'token_comment','content'], 'safe'],
             [['image'], 'file', 'extensions' => 'jpg,jpeg, gif, png, doc, docx, pdf, xlsx, rar, zip, xlsx, xls, txt, csv, rtf, one, pptx, ppsx, pot'],
             [['image'], 'file', 'maxSize' => '10000000'],
             ['level', 'default', 'value' => 1],
@@ -111,7 +117,6 @@ class CommentModel extends ActiveRecord
     {
         if ($this->{$attribute} !== null) {
             $parentCommentExist = static::find()
-                ->approved()
                 ->andWhere([
                     'id' => $this->{$attribute},
                     'entityId' => $this->entityId,
@@ -156,10 +161,6 @@ class CommentModel extends ActiveRecord
                 'parentAttribute' => 'parentId',
                 'sortable' => false,
             ],
-            'moderation' => [
-                'class' => ModerationBehavior::class,
-                'moderatedByAttribute' => false,
-            ],
             'datetime' => [
                 'class' => DateTimeBehavior::className(), // Our behavior
                 'originalFormat' => ['datetime', 'yyyy-MM-dd HH:mm'],
@@ -192,18 +193,12 @@ class CommentModel extends ActiveRecord
             'createdAt_local' => Yii::t('yii2mod.comments', 'Created date'),
             'updatedAt' => Yii::t('yii2mod.comments', 'Updated date'),
             'title' => 'Название события',
+            'type' => 'Тип комментария',
             'token_comment' => 'Токен для связи файлов с комментариями',
             'customcreatedAt' => 'Дата события'
         ];
     }
 
-    /**
-     * @return ModerationQuery
-     */
-    public static function find()
-    {
-        return new ModerationQuery(get_called_class());
-    }
 
     /**
      * @inheritdoc
@@ -211,13 +206,15 @@ class CommentModel extends ActiveRecord
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
-
+            //если коммент - это Рабочий процесс, то его дата находится в поле createdAt_local и ее надо перевести
             if (!empty($this->createdAt_local)) {
                 $this->createdAt = strtotime($this->createdAt_local);
             }
-            if ($this->parentId > 0) {
-                $parentNodeLevel = static::find()->select('level')->where(['id' => $this->parentId])->scalar();
-                $this->level += $parentNodeLevel;
+            if ($insert) {
+                if ($this->parentId > 0) {
+                    $parentNodeLevel = static::find()->select('level')->where(['id' => $this->parentId])->scalar();
+                    $this->level += $parentNodeLevel;
+                }
             }
 
             return true;
@@ -232,11 +229,23 @@ class CommentModel extends ActiveRecord
     public function afterSave($insert, $changedAttributes)
     {
         parent::afterSave($insert, $changedAttributes);
-
-        if (!$insert) {
-            if (array_key_exists('status', $changedAttributes)) {
-                $this->beforeModeration();
+        //меняем статус у задачи если комментарий о завершении задачи
+        if ($this->type == 'complete') {
+            $table_name = '';
+            $model_name = $this->relatedTo;
+            if ($model_name == 'app\models\Task'){
+                $table_name = 'task';
             }
+            if ($model_name == 'app\models\Issues'){
+                $table_name = 'issues';
+            }
+            $class_name = $model_name;
+            $model = new $class_name();
+            $find_record = $model->findOne([$table_name.'.id' => $this->entityId]);
+            $find_record->status = 'completed';
+            //todo сделать время локальным для разных пользователей. Сейчас работает установка серверного времени.
+            $find_record->completed_at = date('Y-m-d H:i:s',time());
+            $find_record->save();
         }
     }
 
@@ -250,7 +259,6 @@ class CommentModel extends ActiveRecord
                 return $this->makeRoot()->save();
             } else {
                 $parentComment = static::findOne(['id' => $this->parentId]);
-
                 return $this->appendTo($parentComment)->save();
             }
         }
@@ -277,15 +285,17 @@ class CommentModel extends ActiveRecord
      *
      * @return array|ActiveRecord[]
      */
-    public static function getTree($entityId, $maxLevel = null)
+    public static function getTree($entityId, $maxLevel = null, $orderby, $relatedTo)
     {
         $query = static::find()
             ->alias('c')
-            ->approved()
             ->andWhere([
                 'c.entityId' => $entityId,
             ])
-            ->orderBy(['c.parentId' => SORT_DESC, 'c.createdAt' => SORT_DESC])
+            ->andWhere([
+                'c.relatedTo' => $relatedTo,
+            ])
+            ->orderBy(['c.parentId' => SORT_DESC, 'c.createdAt' => $orderby])
             ->with(['author']);
 
         if ($maxLevel > 0) {
@@ -349,11 +359,23 @@ class CommentModel extends ActiveRecord
     }
 
     /**
+     * @param $created_by
+     * @return bool
+     */
+    public function isOwner()
+    {
+        if ($this->author->id == Yii::$app->user->id)
+            return true;
+        else
+            return false;
+    }
+
+    /**
      * @return string
      */
     public function getPostedDate()
     {
-        return Yii::$app->formatter->asDatetime($this->createdAt,'php:d.m.Y в H:i');
+        return Yii::$app->formatter->asDatetime($this->createdAt, 'php:d.m.Y в H:i');
     }
 
     /**
@@ -364,7 +386,6 @@ class CommentModel extends ActiveRecord
         if ($this->author->hasMethod('getUsername')) {
             return $this->author->getUsername();
         }
-
         return $this->author->username;
     }
 
@@ -372,8 +393,8 @@ class CommentModel extends ActiveRecord
      * @return string
      */
     public function getContent()
-    {
-        return nl2br($this->content);
+    {   $label = ($this->type == "complete") ? '<span class="label label-danger">Заключение</span> ':'';
+        return  $label . nl2br($this->content);
     }
 
 
@@ -420,7 +441,6 @@ class CommentModel extends ActiveRecord
     public function getCommentsCount()
     {
         return (int)static::find()
-            ->approved()
             ->andWhere(['entityId' => $this->entityId])
             ->count();
     }
@@ -446,18 +466,19 @@ class CommentModel extends ActiveRecord
     }
 
     /**
-     * Before moderation event
+     * Возвращает в переменную complete_with_no_comment false если завершить дело или задачу без сохранение автокомментария нельзя
      *
-     * @return bool
+     *
+     *
+     * public function getAccessCompleteTaskWithNoComent(){
+     * $count_comment_current_user = (int)static::find()
+     * ->andWhere(['relatedTo' => $this->relatedTo])
+     * ->andWhere(['createdBy' => Yii::$app->user->id])
+     * ->count();
+     * if ($count_comment_current_user > 0)
+     * return false;
+     * else
+     * return true;
+     * }
      */
-    public function beforeModeration()
-    {
-        $descendantIds = ArrayHelper::getColumn($this->getDescendants()->asArray()->all(), 'id');
-
-        if (!empty($descendantIds)) {
-            static::updateAll(['status' => $this->status], ['id' => $descendantIds]);
-        }
-
-        return true;
-    }
 }

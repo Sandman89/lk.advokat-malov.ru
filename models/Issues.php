@@ -2,6 +2,9 @@
 
 namespace app\models;
 
+use app\components\ActiveRecordWithAccess;
+use app\components\behaviors\IdAuthorBehavior;
+use app\components\comments\models\CommentModel;
 use omnilight\datetime\DateTimeBehavior;
 use Yii;
 use yii\behaviors\TimestampBehavior;
@@ -19,14 +22,21 @@ use yii\behaviors\TimestampBehavior;
  * @property int $id_category
  * @property int $id_assign
  * @property int $id_client
+ * @property int $id_author
  * @property string $court Судебный орган
  * @property string $judge
  * @property string $court_date Дата следующего заседания
  * @property string $status
+ * @property string $completed_at
  * @property string $contract_number
+ * @property string $category
+ * @property string $workflows
+ * @property bool $accessEdit
+ * @property bool $accessComplete
+ * @property bool $accessRestore
  *
  */
-class Issues extends \yii\db\ActiveRecord
+class Issues extends ActiveRecordWithAccess
 {
     //public $assign_id;
 
@@ -51,6 +61,12 @@ class Issues extends \yii\db\ActiveRecord
 
             ],
             [
+                'class' => IdAuthorBehavior::className(),
+                'attributes' => [
+                    \yii\db\ActiveRecord::EVENT_BEFORE_INSERT => ['id_author'],
+                ],
+            ],
+            [
                 'class' => \voskobovich\linker\LinkerBehavior::className(),
                 'relations' => [
                     'assign_id' => [
@@ -65,7 +81,7 @@ class Issues extends \yii\db\ActiveRecord
                 'class' => DateTimeBehavior::className(), // Our behavior
                 'originalFormat' => ['datetime', 'yyyy-MM-dd HH:mm'],
                 //'targetFormat' => ['datetime', 'yyyy-MM-dd HH:mm'],
-                'targetFormat'=>['datetime', 'dd.MM.yyyy HH:mm'],
+                'targetFormat' => ['datetime', 'dd.MM.yyyy HH:mm'],
                 'attributes' => [
                     'court_date', // List all editable date/time attributes
                 ],
@@ -80,13 +96,14 @@ class Issues extends \yii\db\ActiveRecord
     {
         return [
             [['title'], 'required'],
-            [['title', 'description','contract_number'], 'string'],
-            [['id_assign','assign_id'], 'each', 'rule' => ['integer']],
+            [['title', 'description', 'contract_number'], 'string'],
+            [['id_assign', 'assign_id'], 'each', 'rule' => ['integer']],
             // [['deadline_at'], 'date','format'=>'d.m.Y'],
             // [['created_at', 'updated_at'], 'safe'],
-            [['parent', 'id_category', 'id_client'], 'integer'],
-            [['court_date','court_date_local'], 'safe'],
-            [['court', 'judge', 'status'], 'string', 'max' => 255],
+            [['parent', 'id_category', 'id_client', 'id_author'], 'integer'],
+            [['court_date', 'court_date_local', 'id_author'], 'safe'],
+            [['court', 'judge', 'status', 'completed_at'], 'string', 'max' => 255],
+            ['status', 'default', 'value' => 'working'],
         ];
     }
 
@@ -105,14 +122,15 @@ class Issues extends \yii\db\ActiveRecord
             'id_category' => 'Категория',
             'assign_id' => 'Исполнитель',
             'assign' => 'Исполнитель',
-            'client_id'=>'Клиент',
+            'client_id' => 'Клиент',
             'id_client' => 'Клиент',
             'court' => 'Судебный орган',
             'judge' => 'Судья',
             'court_date' => 'Дата следующего заседания',
             'court_date_local' => 'Дата следующего заседания',
             'status' => 'Статус',
-            'contract_number' => 'Номер договора'
+            'contract_number' => 'Номер договора',
+            'completed_at' => 'Дата завершения'
         ];
     }
 
@@ -123,7 +141,26 @@ class Issues extends \yii\db\ActiveRecord
     }
     public function getClient()
     {
-        return $this->hasMany(\dektrium\user\models\User::className(), ['id' => 'id_client']);
+        return $this->hasOne(\dektrium\user\models\User::className(), ['id' => 'id_client']);
     }
+
+    public function getCategory()
+    {
+        return $this->hasOne(Tree::ClassName(), ['id' => 'id_category']);
+    }
+
+    public function getWorkflows()
+    {
+        return $this->hasMany(CommentModel::className(), ['entityId' => 'id'])->where('relatedTo = "app\\\models\\\Issues"')->andWhere('type = "workflow"');
+    }
+
+    public function getStatuslabel()
+    {
+        if ($this->status == 'completed')
+            return '<span class="label label-danger">Завершено</span>';
+        else
+            return '';
+    }
+
 
 }

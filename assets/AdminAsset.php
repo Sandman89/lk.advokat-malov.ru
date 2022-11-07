@@ -11,8 +11,8 @@ class AdminAsset extends AssetBundle
         'css/lib/bootstrap/bootstrap.min.css',
       //  'css/lib/font-awesome/font-awesome.min.css',
      //   'css/lib/jqueryui/jquery-ui.min.css',
-   //     'css/separate/pages/widgets.min.css',
-     //   'css/separate/vendor/lobipanel.min.css',
+        'css/separate/pages/calendar.min.css',
+        'css/lib/jquery.minicolors.min.css',
         'css/main.css',
         'fonts/startui.eot',
         'fonts/startui.svg',
@@ -32,19 +32,17 @@ class AdminAsset extends AssetBundle
         'fonts/glyphicons-halflings-regular.svg'
     ];
     public $js = [
-        'js/popper.min.js',
+        //'js/popper.min.js',
         'js/bootstrap-filestyle.min.js',
-       // 'js/tether.min.js',
-       // 'js/bootstrap.min.js',
-        //'js/jquery-ui.min.js',
-      //  'js/lobipanel.min.js',
+        'js/collapse.min.js',
+        'js/jquery.minicolors.min.js',
        'js/plugins.js',
         'js/app.js',
 
     ];
     public $depends = [
         'yii\web\YiiAsset',
-        'yii\bootstrap\BootstrapAsset',
+       // 'yii\bootstrap\BootstrapAsset',
         'yii\bootstrap\BootstrapPluginAsset',
     ];
 }

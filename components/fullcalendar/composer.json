@@ -1,0 +1,30 @@
+{
+    "name": "paskuale75/yii2-fullcalendar",
+    "description": "yii2 extension for use js fullcalendar 4.0.2",
+    "type": "yii2-extension",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "paskuale",
+            "email": "pellicanipasquale@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+	"psr-4": { 
+            "yii2fullcalendar\\": ""
+        }	
+    },
+    "require": {
+        "php": ">=7.1.0",
+        "yiisoft/yii2": "^2.0@dev",
+        "bower-asset/fullcalendar" : "^4.0.2@stable",
+	"bower-asset/fullcalendar-scheduler" : "^4.0.2@stable"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ]
+}

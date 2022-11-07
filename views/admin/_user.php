@@ -13,18 +13,34 @@ use yii\helpers\Html;
 
 /**
  * @var yii\widgets\ActiveForm $form
+ * @var bool $role
  * @var dektrium\user\models\User $user
  */
 ?>
 <?php
-    $isExpert = (((Yii::$app->controller->route == "admin/create-expert")||($user->isExpert))&&(!Yii::$app->request->isAjax)) ? true : false;
+    $isExpert = ($role == 'expert') ? true : false;
 ?>
 
-<?= $form->field($user, 'email') ?>
 <?= $form->field($user, 'username') ?>
+<?= $form->field($user, 'email') ?>
+<?php if ($user->scenario != 'settings'): ?>
 <?= $form->field($user, 'password')->passwordInput() ?>
+<?php endif; ?>
+<?php if ($user->scenario == 'settings'): ?>
+    <div id="password_fields" style="display: none;">
+        <?= $form->field($user, 'new_password')->passwordInput() ?>
+        <?= $form->field($user, 'password')->passwordInput()->label('Текущий пароль')  ?>
+    </div>
+
+
+    <button type="button" class="btn btn-primary" style="margin-bottom: 20px"
+                onclick="$(this).hide();$('#password_fields').slideDown(); return false; ">
+            Изменить пароль
+    </button>
+
+<?endif; ?>
 <?= $form->field($user, 'phone') ?>
-<?php if (!$isExpert) {
+<?php if ($role == 'client') {
     echo $form->field($user, 'card_number');
 }
 ?>
@@ -33,7 +49,7 @@ use yii\helpers\Html;
     <?= $form->field($user, 'company_posiotion') ?>
     <?php if (Yii::$app->user->identity->isAdmin)
         echo $form->field($user, 'admin', [
-            'template' => '<div class="col-sm-12 checkbox">{input}{label}{error}<div><small class="text-muted">Администатор может видеть дела и задачи всех сотрудников. Специалисту доступны только дела и задачи, которые его касаются</small></div></div>',
+            'template' => '<div class="col-sm-12 checkbox">{input}{label}{error}<div><small class="text-muted">Администатор может видеть дела и задачи всех сотрудников. <br>Без этой опции будут права обычного специалиста, которому доступны только его дела и задачи.</small></div></div>',
             'labelOptions' => ['class' => 'form-label'],
             'inputOptions' => ['class' => 'checkbox']
         ])->checkbox([], false)->label();
@@ -44,7 +60,10 @@ use yii\helpers\Html;
     'deleteUrl' => ['deleteImage', 'id' => $user->getPrimaryKey()],
     'cropUrl' => ['cropImage', 'id' => $user->getPrimaryKey()],
     // cropper options https://github.com/fengyuanchen/cropper/blob/master/README.md#options
-    'cropPluginOptions' => [],
+    'cropPluginOptions' => [
+            'minCropBoxWidth'=>0,
+            'minCropBoxHeight'=>0,
+    ],
     // Translated messages
     'messages' => [
         // {formats} and {formattedSize} will replaced by widget to actual values
@@ -66,3 +85,4 @@ $script = new \yii\web\JsExpression("
 ");
 $this->registerJs($script, \yii\web\View::POS_END);
 ?>
+

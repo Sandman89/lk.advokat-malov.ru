@@ -15,6 +15,7 @@ use yii\helpers\Html;
 
 /**
  * @var yii\web\View $this
+ * @var bool $role
  * @var dektrium\user\models\User $user
  */
 if (Yii::$app->controller->route == "admin/create-expert")
@@ -34,23 +35,26 @@ $this->params['breadcrumbs'][] = $this->title;
 
 <div class="box-typical box-typical-padding">
     <div class="alert alert-info">
-        <?= Yii::t('user', 'Credentials will be sent to the user by email') ?>.
+        <?= Yii::t('user', 'Credentials will be sent to the user by email') ?>
+        <br>
         <?= Yii::t('user', 'A password will be generated automatically if not provided') ?>.
     </div>
     <?php $form = ActiveForm::begin([
 
         'enableAjaxValidation' => true,
         'enableClientValidation' => false,
-        'options' => ['class' => 'form-horizontal','enctype' => 'multipart/form-data'],
+        'validationUrl' => \yii\helpers\Url::toRoute('admin/validation'),
+        'options' => ['class' => 'form-horizontal', 'enctype' => 'multipart/form-data'],
         'fieldConfig' => [
             'options' => ['class' => 'form-group row'],
             'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper">{input}{error}</div></div>',
             'labelOptions' => ['class' => 'form-label'],
-            'errorOptions' => ['class' => 'form-tooltip-error']
+            'errorOptions' => ['class' => 'form-tooltip-error'],
+            'inputOptions' => ['autocomplete' => 'off'],
         ],
     ]); ?>
 
-    <?= $this->render('_user', ['form' => $form, 'user' => $user]) ?>
+    <?= $this->render('_user', ['form' => $form, 'user' => $user, 'role' => $role]) ?>
 
     <div class="form-group row">
         <div class="col-sm-12 text-center">

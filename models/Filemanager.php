@@ -79,6 +79,29 @@ class Filemanager extends \yii\db\ActiveRecord
     }
 
     /**
+     * @param  $commentModel \app\components\comments\models\CommentModel
+     */
+    public static function SaveConstAttachment($commentModel){
+        $files = Filemanager::find()->where(['token_comment' => $commentModel->token_comment, 'id_comment' => null])->all();
+        if (count($files) > 0) {
+            $root = Yii::getAlias('@webroot');
+            preg_match('/[A-Z]/', $commentModel->relatedTo, $char_model, PREG_OFFSET_CAPTURE, 0);
+            $newFilePath = '/attachments/' . $commentModel->entityId.'-'.$char_model[0][0] . '_' . self::RandomString($commentModel->entityId);
+            foreach ($files as $file) {
+                //создаем новую папку для соответствующего дела и переносим туда файл из комментария
+                if (!is_dir($root . $newFilePath)) {
+                    mkdir($root . $newFilePath, 0755, true);
+                }
+                rename($root . $file->path, $root . $newFilePath . '/' . $file->name);
+                //обновляем путь до файла в таблице файлов
+                $file->path = $newFilePath . '/' . $file->name;
+                //устанавливаем id коммент для ссылки
+                $file->id_comment = $commentModel->id;
+                $file->update(false);
+            }
+        }
+    }
+    /**
      * @param $attachments
      * @return array
      */
@@ -168,5 +191,22 @@ class Filemanager extends \yii\db\ActiveRecord
             return '<a target="_blank" href="https://docs.google.com/viewer?url=' . Url::base(TRUE) . $file->path . '&embedded=true">Смотреть</a>';
         return '';
 
+    }
+
+    /**
+     * @return string
+     */
+    public static function RandomString($number)
+    {
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $randstring = '';
+        for ($i = 0; $i < 10; $i++) {
+            if (($i + 1) * $number > 52)
+                $num_char = 52 - ((($i + 1) * $number) % 52);
+            else
+                $num_char = 52 - ($i + 1) * $number;
+            $randstring .= $characters[$num_char];
+        }
+        return $randstring;
     }
 }

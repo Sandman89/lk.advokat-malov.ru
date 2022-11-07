@@ -12,14 +12,18 @@ use app\models\Issues;
  */
 class IssuesSearch extends Issues
 {
-    /**
-     * {@inheritdoc}
-     */
+    public $client;
+    public $assigns;
+    public $workflow;
+    public $court_date_filter;
+    /* /**
+      * {@inheritdoc}
+      */
     public function rules()
     {
         return [
             [['id', 'created_at', 'parent', 'id_category', 'id_assign', 'id_client'], 'integer'],
-            [['title', 'description'], 'safe'],
+            [['title', 'description','contract_number','court_date','client','assigns','workflow'], 'safe'],
         ];
     }
 
@@ -36,10 +40,11 @@ class IssuesSearch extends Issues
      * Creates data provider instance with search query applied
      *
      * @param array $params
+     * @param string $type тип поиска, если archive - то ищем записи с status = 'completed'
      *
      * @return ActiveDataProvider
      */
-    public function search($params)
+    public function search($params,$type = null)
     {
         $query = Issues::find();
 
@@ -48,27 +53,74 @@ class IssuesSearch extends Issues
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
         ]);
+        $dataProvider->setSort([
+            'attributes' => [
+                'title',
+                'client' => [
+                    'asc' => ['client.username' => SORT_ASC],
+                    'desc' => ['client.username' => SORT_DESC],
+                    'label' => 'client'
+                ],
+                'assigns' => [
+                    'asc' => ['assigns.username' => SORT_ASC],
+                    'desc' => ['assigns.username' => SORT_DESC],
+                    'label' => 'assigns'
+                ],
+                'court_date',
+                'contract_number',
+                'created_at',
+            ]
+        ]);
+        $dataProvider->sort->defaultOrder = ['created_at' => SORT_DESC];
+        //проверяем параметр архив. Если там есть archive, то ищем записи с status = 'completed'
+        if (!empty($type)){
+            if ($type == 'archive'){
+                $query->where(['=','status','completed']);
+            }
+        }
+        else{
+            $query->where(['!=','status','completed']);
+        }
 
-        $this->load($params);
-
-        if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            // $query->where('0=1');
+        if (!($this->load($params) && $this->validate())) {
+            /**
+             * Жадная загрузка данных модели для работы сортировки.
+             */
+            $query->joinWith(['client client']);
+            $query->joinWith(['assigns assigns']);
             return $dataProvider;
         }
 
-        // grid filtering conditions
-        $query->andFilterWhere([
-            'id' => $this->id,
-            'created_at' => $this->created_at,
-            'parent' => $this->parent,
-            'id_category' => $this->id_category,
-            'id_assign' => $this->id_assign,
-            'id_client' => $this->id_client,
-        ]);
-
         $query->andFilterWhere(['like', 'title', $this->title])
-            ->andFilterWhere(['like', 'description', $this->description]);
+              ->andFilterWhere(['like', 'contract_number', $this->contract_number]);
+
+
+        // Фильтр по клиенту
+        if (!empty($this->client)) {
+            $query->joinWith(['client client'])->where('client.username LIKE "%' . $this->client . '%"');
+        }
+        // Фильтр по исполнителю
+        if (!empty($this->assigns)) {
+            $query->joinWith(['assigns assigns'])->where('assigns.username LIKE "%' . $this->assigns . '%"');
+        }
+        // Фильтр по дате суда
+        if (!empty($this->court_date)) {
+            $range_date_arr = explode(' — ',$this->court_date);
+            if (count($range_date_arr) > 1){
+                $today_start = date('Y-m-d H:i:s', strtotime($range_date_arr[0]));
+                $today_end = date('Y-m-d 23:59:59', strtotime($range_date_arr[1]));
+                $query->andWhere(['between', 'court_date', $today_start, $today_end]);
+            }
+        }
+        // Фильтр по ходу рабочего процесса
+        if (!empty($this->workflow)){
+            /*$query->joinWith(['workflows' => function ($q) {
+                $q->where('comment.title LIKE "%' . $this->workflow . '%"');
+            }]);*/
+            $query->joinWith(['workflows'])->where('comment.title LIKE "%'.$this->workflow.'%"');
+        }
+
+        //$query->andFilterWhere(['like', 'id', $this->id]);
 
         return $dataProvider;
     }

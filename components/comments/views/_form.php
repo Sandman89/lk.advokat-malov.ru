@@ -8,13 +8,14 @@ use kartik\file\FileInput;
 /* @var $this \yii\web\View */
 /* @var $commentModel \yii2mod\comments\models\CommentModel */
 /* @var $encryptedEntity string */
+/* @var $class_form string */
 /* @var $formId string comment form id */
 ?>
 <div class="comment-form-container">
     <?php $form = ActiveForm::begin([
         'options' => [
             'id' => $formId,
-            'class' => 'comment-box',
+            'class' => $class_form,
         ],
         'fieldConfig' => [
             'options' => ['class' => 'form-group row'],
@@ -26,9 +27,8 @@ use kartik\file\FileInput;
         'validateOnChange' => false,
         'validateOnBlur' => false,
     ]); ?>
-
-    <?php $template_comment = '<div class="col-sm-12"><div class="form-control-wrapper form-control-wrapper__fileinput">{input}{error}</div></div>'; ?>
-    <?php echo $form->field($commentModel, 'content', ['template' => '<div class="col-sm-12"><div class="form-control-wrapper">{input}{error}</div></div>'])->textarea(['placeholder' => Yii::t('yii2mod.comments', 'Add a comment...'), 'rows' => 2, 'data' => ['comment' => 'content']]) ?>
+    <div>
+    <?php echo $form->field($commentModel, 'content', [ 'template' => '<div class="col-sm-12"><div class="form-control-wrapper">{input}{error}</div></div>'])->textarea(['placeholder' => Yii::t('yii2mod.comments', 'Add a comment...'), 'rows' => 2, 'data' => ['comment' => 'content'],'tabindex' => '1']) ?>
 
 
     <?php echo $form->field($commentModel, 'parentId', ['options' => ['class' => ''], 'template' => '{input}'])->hiddenInput(['data' => ['comment' => 'parent-id']]); ?>
@@ -112,12 +112,20 @@ use kartik\file\FileInput;
              $(this).fileinput("upload");
              }',
                 ]
-            ]) ?>
-            <?php echo Html::submitButton(Yii::t('yii2mod.comments', 'Comment'), ['class' => 'btn btn-success']); ?>
+            ])  ?>
+            <?php echo Html::submitButton('Опубликовать', ['class' => 'btn btn-success','tabindex'=>3]); ?>
             <?php echo Html::a('Отменить ответ', '#', ['id' => 'cancel-reply', 'class' => 'btn btn btn-default-outline pull-right', 'data' => ['action' => 'cancel-reply']]); ?>
-
+            </div>
         </div>
     </div>
     <?php $form->end(); ?>
     <div class="clearfix"></div>
 </div>
+<?php
+$script = new \yii\web\JsExpression("$('#".$formId." textarea').keydown(function (e) {
+  if (e.ctrlKey && e.keyCode == 13) {
+     $('#".$formId."').submit();
+  }
+});");
+$this->registerJs($script, \yii\web\View::POS_END);
+?>
