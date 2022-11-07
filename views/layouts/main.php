@@ -10,10 +10,7 @@ use yii\helpers\Url;
 use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
 use yii\widgets\Breadcrumbs;
-use app\assets\AppAsset;
-
-
-//$directoryAsset = Yii::$app->assetManager->getPublishedUrl('@app/views/assets');
+use app\assets\AppAssetasd;
 
 
 \app\assets\AdminAsset::register($this);

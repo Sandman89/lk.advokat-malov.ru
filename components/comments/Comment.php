@@ -18,7 +18,7 @@ use app\components\comments\models\CommentModel;
 class Comment extends Widget
 {
 
-
+    public $orderby = SORT_DESC;
     /**
      * @var \yii\db\ActiveRecord|null Widget model
      */
@@ -119,7 +119,7 @@ class Comment extends Widget
         $this->entityId = $this->model->{$this->entityIdAttribute};
 
         if (empty($this->relatedTo)) {
-            $this->relatedTo = get_class($this->model) . ':' . $this->entityId;
+            $this->relatedTo = get_class($this->model);
         }
 
         $this->encryptedEntity = $this->getEncryptedEntity();
@@ -147,6 +147,7 @@ class Comment extends Widget
             'id_issue' => $this->entityId,
             'commentDataProvider' => $commentDataProvider,
             'commentModel' => $commentModel,
+            'statusWorkObject'=>$this->model->status,
             'maxLevel' => $this->maxLevel,
             'encryptedEntity' => $this->encryptedEntity,
             'pjaxContainerId' => $this->pjaxContainerId,
@@ -161,12 +162,21 @@ class Comment extends Widget
      *
      * @return string
      */
-    protected function getEncryptedEntity()
+    public function getEncryptedEntity($entityId = null, $model_class = null)
     {
-        return utf8_encode(Yii::$app->getSecurity()->encryptByKey(Json::encode([
-            'entityId' => $this->entityId,
-            'relatedTo' => $this->relatedTo,
-        ]), 'comment'));
+        if ((empty($entityId)) && (empty($model_class)))
+            return utf8_encode(Yii::$app->getSecurity()->encryptByKey(Json::encode([
+                'entityId' => $this->entityId,
+                'relatedTo' => $this->relatedTo,
+            ]), 'comment'));
+        else {
+            $relatedTo =  $model_class;
+            return utf8_encode(Yii::$app->getSecurity()->encryptByKey(Json::encode([
+                'entityId' => $entityId,
+                'relatedTo' => $relatedTo,
+            ]), 'comment'));
+        }
+
     }
 
     /**
@@ -201,7 +211,7 @@ class Comment extends Widget
     {
         $dataProvider = new ArrayDataProvider($this->dataProviderConfig);
         if (!isset($this->dataProviderConfig['allModels'])) {
-            $dataProvider->allModels = $commentClass::getTree($this->entityId, $this->maxLevel);
+            $dataProvider->allModels = $commentClass::getTree($this->entityId, $this->maxLevel, $this->orderby, $this->relatedTo);
         }
 
         return $dataProvider;

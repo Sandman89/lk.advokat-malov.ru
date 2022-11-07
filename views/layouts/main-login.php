@@ -10,7 +10,7 @@ use yii\helpers\Url;
 use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
 use yii\widgets\Breadcrumbs;
-use app\assets\AppAsset;
+use app\assets\AppAssetasd;
 
 \app\assets\AdminAsset::register($this);
 ?>

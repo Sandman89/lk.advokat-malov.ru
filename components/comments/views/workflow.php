@@ -9,11 +9,12 @@ use yii\helpers\Url;
 
 /**
  * @var yii\web\View $this
+ * @var bool $complete
  * @var app\components\comments\models\CommentModel $commentModel
  */
 
 $this->title = 'Создать этап дела';
-$is_workflow = (!empty($commentModel->title)) ? true : false;
+$is_workflow = ($commentModel->scenario == 'workflow') ? true : false;
 ?>
 
 
@@ -31,45 +32,52 @@ $is_workflow = (!empty($commentModel->title)) ? true : false;
         ],
     ]); ?>
     <?php if ($is_workflow) : ?>
-    <div class="row">
-        <div class="col-sm-6"> <?= $form->field($commentModel, 'createdAt_local')->widget(FlatpickrWidget::class, [
-                'locale' => 'ru',
-                // https://chmln.github.io/flatpickr/plugins/
-                'plugins' => [
-                    'confirmDate' => [
-                        'confirmText' => 'OK',
-                        'showAlways' => false,
-                        'theme' => 'light',
+        <div class="row">
+            <div class="col-sm-6"> <?= $form->field($commentModel, 'createdAt_local')->widget(FlatpickrWidget::class, [
+                    'locale' => 'ru',
+                    // https://chmln.github.io/flatpickr/plugins/
+                    'plugins' => [
+                        'confirmDate' => [
+                            'confirmText' => 'OK',
+                            'showAlways' => false,
+                            'theme' => 'light',
+                        ],
                     ],
-                ],
-                'groupBtnShow' => true,
-                'options' => [
-                    'class' => 'form-control',
-                    'autocomplete' => 'off'
-                ],
-                'clientOptions' => [
-                    // config options https://chmln.github.io/flatpickr/options/
-                    'allowInput' => true,
-                    'dateFormat' => "d.m.Y H:i",
-                    'defaultDate' => null,
-                    'enableTime' => true,
-                    'time_24hr' => true,
-                ],
-            ]); ?></div>
-        <div class="col-sm-6">
-            <?= $form->field($commentModel, 'title')->widget(Typeahead::classname(), [
-                'options' => ['placeholder' => 'Выберите название или введите свое...', 'autocomplete' => 'off'],
-                'defaultSuggestions' => \app\components\comments\models\CommentModel::$workflow_title,
-                'pluginOptions' => ['highlight' => true],
-                'dataset' => [
-                    [
-                        'local' => \app\components\comments\models\CommentModel::$workflow_title,
-                        'limit' => 17
+                    'groupBtnShow' => true,
+                    'options' => [
+                        'class' => 'form-control',
+                        'autocomplete' => 'off'
+                    ],
+                    'clientOptions' => [
+                        // config options https://chmln.github.io/flatpickr/options/
+                        'allowInput' => true,
+                        'dateFormat' => "d.m.Y H:i",
+                        'defaultDate' => null,
+                        'enableTime' => true,
+                        'time_24hr' => true,
+                    ],
+                ]); ?></div>
+            <div class="col-sm-6">
+                <?= $form->field($commentModel, 'title')->widget(Typeahead::classname(), [
+                    'options' => ['placeholder' => 'Выберите название или введите свое...', 'autocomplete' => 'off'],
+                    'defaultSuggestions' => \app\components\comments\models\CommentModel::$workflow_title,
+                    'pluginOptions' => ['highlight' => true],
+                    'dataset' => [
+                        [
+                            'local' => \app\components\comments\models\CommentModel::$workflow_title,
+                            'limit' => 17
+                        ]
                     ]
-                ]
-            ]) ?>
+                ]) ?>
+            </div>
         </div>
-    </div>
+    <?php endif; ?>
+    <?php if ($complete): ?>
+        <div class="alert alert-blue-dirty alert-no-border alert-close alert-dismissible fade show" role="alert"
+             style="margin-top: -20px">
+            <strong>Результат работы</strong><br>
+            Опишите результат выполнения задачи в комментарии.<br>
+        </div>
     <?php endif; ?>
     <div class="row">
         <div class="col-sm-12"><?= $form->field($commentModel, 'content')->textarea(['rows' => 3]) ?></div>
@@ -175,7 +183,11 @@ $is_workflow = (!empty($commentModel->title)) ? true : false;
 
     <div class="form-group row">
         <div class="col-sm-12 text-center">
-            <?= Html::submitButton($commentModel->isNewRecord ? 'Создать' : 'Обновить', ['class' => 'btn btn-success']) ?>
+            <?php if ($complete)
+                echo Html::submitButton('Завершить', ['class' => 'btn btn-success']);
+            else
+                echo Html::submitButton($commentModel->isNewRecord ? 'Создать' : 'Обновить', ['class' => 'btn btn-success']);
+            ?>
             <br>
         </div>
     </div>

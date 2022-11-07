@@ -8,12 +8,16 @@
 
 use yii\helpers\Html;
 
+/* @var array $users */
+/* @var string $title */
+
 ?>
 <h5 class="m-b-md"><?= $title ?> </h5>
 <div class="issues-view-assign box-typical p-a-lg p-t-0">
     <div class="row">
+        <?php $col = (count($users) >= 3) ? '4' : '6' ?>
         <?php foreach ($users as $user_item): ?>
-            <div class="col-md-4">
+            <div class="col-md-<?= $col ?>">
                 <div class="issues-view-assign__item p-t-lg">
                     <div class="issues-view-assign__item-image p-t-lg"><?= Html::img($user_item->getImageSrc("small_")) ?></div>
                     <div class="issues-view-assign__item-text ">

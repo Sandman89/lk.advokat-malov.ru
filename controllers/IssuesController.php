@@ -37,12 +37,33 @@ class IssuesController extends Controller
      */
     public function actionIndex()
     {
+        if (Yii::$app->user->identity->isClient) {
+            $model = Issues::find()->one();
+            return $this->redirect(['issues/view', 'id' => $model->id]);
+        }
         $searchModel = new IssuesSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'is_archive' => false
+        ]);
+    }
+
+    /**
+     * Lists all Issues models.
+     * @return mixed
+     */
+    public function actionArchive()
+    {
+        $searchModel = new IssuesSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'archive');
+
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+            'is_archive' => true
         ]);
     }
 
@@ -56,7 +77,6 @@ class IssuesController extends Controller
     {
         return $this->render('view', [
             'model' => $this->findModel($id),
-            //'model' => Issues::find()->with(['client','assigns'])->where(['id'=>$id])->one()
         ]);
     }
 
@@ -76,15 +96,8 @@ class IssuesController extends Controller
                     Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
                     return $model->id;
                 } else {
-                    if (isset($_POST['button-state'])) {
-                        if ($_POST['button-state'] == 'go')
-                            return $this->redirect(['view', 'id' => $model->id]);
-                        if ($_POST['button-state'] == 'create'){
-                            \Yii::$app->getSession()->setFlash('success', 'Дело # '.$model->id.' было успешно создано');
-                            return $this->redirect(['create']);
-                        }
-                    }
-                    //return $this->redirect(['view', 'id' => $model->id]);
+                    \Yii::$app->getSession()->setFlash('success', 'Дело # ' . $model->id . ' было успешно создано');
+                    return $this->redirect(['issues/view', 'id' => $model->id]);
                 }
             } else {
                 var_dump($model->errors);
@@ -115,25 +128,72 @@ class IssuesController extends Controller
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            if (isset($_POST['button-state'])) {
-                if ($_POST['button-state'] == 'go')
-                    return $this->redirect(['view', 'id' => $model->id]);
-                if ($_POST['button-state'] == 'create'){
-                    \Yii::$app->getSession()->setFlash('success', 'Дело # '.$model->id.' было обновлено');
-                }
+            if (Yii::$app->request->isAjax) {
+                Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+                return $model->id;
+            } else {
+                \Yii::$app->getSession()->setFlash('success', 'Дело # ' . $model->id . ' было обновлено');
+                return $this->redirect(['view', 'id' => $model->id]);
             }
         }
         if (Yii::$app->request->isAjax) {
             return $this->renderAjax('update', [
                 'model' => $model,
             ]);
-        }
-        else{
+        } else {
             return $this->render('update', [
                 'model' => $model,
             ]);
         }
 
+    }
+
+    /**
+     *  Complete process
+     *
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionComplete($id, $lomodal = false)
+    {
+        $model = $this->findModel($id);
+        $model->status = "completed";
+        $model->completed_at = date('Y-m-d H:i:s', time());
+        if ($model->save()) {
+            if ($lomodal) {
+                return $this->redirect(['index']);
+            }
+            \Yii::$app->getSession()->setFlash('success', 'Дело № ' . $model->id . ' завершено и помещено в архив');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+        return false;
+        /*
+        return $this->render('view', [
+            'model' => $model,
+        ]);*/
+    }
+
+    /**
+     *  Restore process
+     *
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionRestore($id, $lomodal = false)
+    {
+        $model = $this->findModel($id);
+        $model->status = "worked";
+        if ($model->save()) {
+            if ($lomodal) {
+                return $this->redirect(['issues/archive']);
+            } else {
+                \Yii::$app->getSession()->setFlash('success', 'Дело № ' . $model->id . ' было возвращено в работу');
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
+        }
+        return false;
     }
 
     /**
@@ -166,4 +226,21 @@ class IssuesController extends Controller
         throw new NotFoundHttpException('The requested page does not exist.');
     }
 
+    public function actionIssueList($q = null, $id = null)
+    {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $out = ['results' => ['id' => '', 'text' => '']];
+        if (!is_null($q)) {
+            $query = new Query;
+            $query->select('id, title AS text')
+                ->from('issues')
+                ->where(['like', 'title', $q]);
+            $command = $query->createCommand();
+            $data = $command->queryAll();
+            $out['results'] = array_values($data);
+        } elseif ($id > 0) {
+            $out['results'] = ['id' => $id, 'text' => Issues::find($id)->title];
+        }
+        return $out;
+    }
 }

@@ -19,7 +19,7 @@ use kartik\select2\Select2;
     <?php $form = ActiveForm::begin(
         ['id' => 'form-issues',
             'fieldConfig' => [
-                'inputOptions' => ['autocomplete' => 'off','class'=>'form-control'],
+                'inputOptions' => ['autocomplete' => 'off', 'class' => 'form-control'],
             ],
         ]);
     ?>
@@ -33,16 +33,17 @@ use kartik\select2\Select2;
 
         <?= $form->field($model, 'description', [
             'options' => ['class' => 'form-group row'],
-            'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper">{input}{error}</div></div>',
+            'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper cke-wrapper">{input}{error}</div></div>',
             'errorOptions' => ['class' => 'form-tooltip-error'],
             'labelOptions' => ['class' => 'form-label']])->widget(CKEditor::className(),
             [
                 'preset' => 'custom',
-                'options' => ['rows' => 6],
+                'options' => ['rows' => 3],
                 'clientOptions' => [
                     'removePlugins' => 'elementspath',
                     'extraPlugins' => 'colorbutton,justify',
                     'resize_enabled' => false,
+                    'height' => 120,
                     'removeButtons' => 'Styles,Anchor,Subscript,Superscript,Flash,Smiley,SpecialChar,PageBreak,Iframe,HorizontalRule,Table',
                     'toolbarGroups' => [
                         ['name' => 'basicstyles', 'groups' => ['basicstyles', 'cleanup']],
@@ -70,7 +71,7 @@ use kartik\select2\Select2;
             'multiple' => false,            // set to false if you do not need multiple selection
             'fontAwesome' => false,            // render font awesome icons
             // custom root label
-            //'options'         => ['disabled' => true],
+            'options' => ['id' => 'input-id_category'],
         ]); ?>
         <?= $form->field($model, 'contract_number', [
             'options' => ['class' => 'form-group row'],
@@ -86,19 +87,27 @@ use kartik\select2\Select2;
                 <div class="col-sm-6">
 
                     <h5 class="m-b-lg">Информация о клиенте</h5>
-                    <?php \yii\widgets\Pjax::begin(['id' => 'client-pjax', 'timeout' => 5000,]); ?>
-                    <?= $form->field($model, 'id_client', [
+                    <?php
+                    $client_username = empty($model->id_client) ? '' : $model->client->username;
+                    echo $form->field($model, 'id_client', [
                         'options' => ['class' => 'form-group row'],
                         'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper custom-select2">{input}{error}</div></div>',
                         'errorOptions' => ['class' => 'form-tooltip-error'],
                         'labelOptions' => ['class' => 'form-label']])->widget(Select2::classname(), [
-                        'data' => ArrayHelper::map(\dektrium\user\models\User::find()->where(['role' => 'client'])->all(), 'id', 'username'),
+                        'initValueText' => $client_username,
                         'bsVersion' => 4,
                         'language' => 'ru',
                         'options' => ['placeholder' => 'Выберите клиента...',],
                         'size' => Select2::SMALL,
                         'pluginOptions' => [
+                            'minimumInputLength' => 2,
                             'allowClear' => true,
+                            'dropdownParent' =>  (Yii::$app->request->isAjax) ? new \yii\web\JsExpression('$("#issue-ajax")') : false,
+                            'ajax' => [
+                                'url' => \yii\helpers\Url::to(['admin/client-list']),
+                                'dataType' => 'json',
+                                'data' => new \yii\web\JsExpression('function(params) { return {q:params.term}; }')
+                            ],
                         ],
                         'addon' => [
                             'prepend' => [
@@ -106,7 +115,7 @@ use kartik\select2\Select2;
                             ],
                             'append' => [
                                 'content' => lo\widgets\modal\ModalAjax::widget([
-                                    'id' => 'w02',
+                                    'id' => 'user-ajax',
                                     'header' => '<h4 class="modal-title">Создать нового клиента</h4>',
                                     'toggleButton' => [
                                         'label' => 'Создать',
@@ -115,21 +124,24 @@ use kartik\select2\Select2;
                                     'closeButton' => [
                                         'class' => 'close modal-close'
                                     ],
-                                    'autoClose' => true,
-                                    'pjaxContainer' => '#client-pjax',
+                                    'autoClose' => false,
                                     //событие
                                     'events' => [
                                         lo\widgets\modal\ModalAjax::EVENT_MODAL_SUBMIT => new \yii\web\JsExpression("
                                                 function(event, data, status, xhr, selector) {
                                                     if(status){
-                                                             $.pjax.reload({container: '#client-pjax', async: false})
-                                                            $('#issues-id_client').val(data).trigger('change');
-                                                             $(this).modal('toggle');
+                                                            user = JSON.parse(data);
+                                                            $('#issues-id_client').append($('<option>', {
+                                                                value: user.id,
+                                                                text: user.username
+                                                            }));
+                                                            $('#issues-id_client').val(user.id).trigger('change');
+                                                            $(this).modal('toggle');                                                            
                                                         }
                                                        
                                                     }
                                             "),],
-                                    'url' => yii\helpers\Url::to(['/admin/create']),
+                                    'url' => yii\helpers\Url::to(['/admin/create','role'=>'client']),
                                     'ajaxSubmit' => true,
                                 ]),
                                 'asButton' => true
@@ -137,7 +149,7 @@ use kartik\select2\Select2;
 
                         ],
                     ]); ?>
-                    <?php \yii\widgets\Pjax::end(); ?>
+
                 </div>
                 <div class="col-sm-6">
 
@@ -191,59 +203,56 @@ JS;
             </div>
         </div>
     </div>
+
+
     <div class="box-typical box-typical-padding">
-        <h5 class="m-b-lg">Информация о суде</h5>
-        <?= $form->field($model, 'court', ['options' => ['class' => 'form-group row'],
-            'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper">{input}{error}</div></div>',
-            'errorOptions' => ['class' => 'form-tooltip-error'],
-            'labelOptions' => ['class' => 'form-label']])->textInput() ?>
-        <?= $form->field($model, 'judge', ['options' => ['class' => 'form-group row'],
-            'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper">{input}{error}</div></div>',
-            'errorOptions' => ['class' => 'form-tooltip-error'],
-            'labelOptions' => ['class' => 'form-label']])->textInput() ?>
+        <a class="grey-text  <?=  (($model->court_date) && ($model->court)) ? '':'collapsed' ?> collapse-link" data-toggle="collapse" href="#sud-info"><h5 class="m-b-lg">
+                Информация о суде</h5></a>
+        <div class="collapse <?=  (($model->court_date) && ($model->court)) ? 'show':'' ?>" id="sud-info">
+            <?= $form->field($model, 'court', ['options' => ['class' => 'form-group row'],
+                'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper">{input}{error}</div></div>',
+                'errorOptions' => ['class' => 'form-tooltip-error'],
+                'labelOptions' => ['class' => 'form-label']])->textInput() ?>
+            <?= $form->field($model, 'judge', ['options' => ['class' => 'form-group row'],
+                'template' => '<div class="col-sm-12">{label}<div class="form-control-wrapper">{input}{error}</div></div>',
+                'errorOptions' => ['class' => 'form-tooltip-error'],
+                'labelOptions' => ['class' => 'form-label']])->textInput() ?>
 
-        <?= $form->field($model, 'court_date_local')->widget(\bs\Flatpickr\FlatpickrWidget::className(), [
-            'locale' => strtolower(substr(Yii::$app->language, 0, 2)),
-            // https://chmln.github.io/flatpickr/plugins/
-            'plugins' => [
-                'confirmDate' => [
-                    'confirmText' => 'OK',
-                    'showAlways' => false,
-                    'theme' => 'light',
+            <?= $form->field($model, 'court_date_local')->widget(\bs\Flatpickr\FlatpickrWidget::className(), [
+                'locale' => strtolower(substr(Yii::$app->language, 0, 2)),
+                // https://chmln.github.io/flatpickr/plugins/
+                'plugins' => [
+                    'confirmDate' => [
+                        'confirmText' => 'OK',
+                        'showAlways' => false,
+                        'theme' => 'light',
+                    ],
                 ],
-            ],
-            'groupBtnShow' => true,
-            'options' => [
-                'class' => 'form-control',
-                'autocomplete' => 'off'
-            ],
-            'clientOptions' => [
-                // config options https://chmln.github.io/flatpickr/options/
-                'allowInput' => true,
-                'dateFormat'=> "d.m.Y H:i",
-                'defaultDate' =>  null,
-                'enableTime' => true,
-                'time_24hr' => true,
-            ],
-        ]); ?>
-
+                'groupBtnShow' => true,
+                'options' => [
+                    'class' => 'form-control',
+                    'autocomplete' => 'off'
+                ],
+                'clientOptions' => [
+                    // config options https://chmln.github.io/flatpickr/options/
+                    'allowInput' => true,
+                    'dateFormat' => "d.m.Y H:i",
+                    'defaultDate' => null,
+                    'enableTime' => true,
+                    'time_24hr' => true,
+                ],
+            ]); ?>
+        </div>
     </div>
 
 
-    <input type="text" class="btn btn-success" id="button-state" name="button-state" hidden value="">
-
-    <?php ActiveForm::end();?>
+    <?php ActiveForm::end(); ?>
     <div class="form-group-buttons row">
         <div class="col-sm-12 text-center">
             <?= Html::submitButton(($model->isNewRecord) ? 'Создать' : 'Обновить', ['class' => 'btn btn-success ',
                 'name' => 'create',
-                'form' => 'form-issues',
-                'onclick' => 'handleSubmitButton(this)',]) ?>
-
-            <?= Html::submitButton(($model->isNewRecord) ? 'Создать и перейти' : 'Обновить и перейти', ['class' => 'btn btn-success',
-                'name' => 'go',
-                'form' => 'form-issues',
-                'onclick' => 'handleSubmitButton(this)',]) ?>
+                'form' => 'form-issues'
+            ]) ?>
 
         </div>
     </div>
@@ -252,14 +261,15 @@ JS;
 <?php
 
 $script = new \yii\web\JsExpression("
-    function handleSubmitButton(_button) {
-       jQuery('#button-state').val(_button.name);
-    }
-   jQuery('#w0').on('treeview.checked', function(event, key) {
+   jQuery('#input-id_category').on('treeview.checked', function(event, key) {
              jQuery('.kv-tree-dropdown-container').removeClass('show');
                     jQuery('.kv-tree-dropdown').removeClass('show');
                     jQuery('.kv-tree-dropdown').attr(\"style\",\"\");
     });
+    $('#user-ajax').on('hidden.bs.modal', function (e) {
+        if ($('#issue-ajax').length > 0)
+            $('body').addClass('modal-open');
+    })
 ");
-$this->registerJs($script, \yii\web\View::POS_END);
+$this->registerJs($script, \yii\web\View::POS_READY);
 ?>

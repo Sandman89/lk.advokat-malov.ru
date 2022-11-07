@@ -79,6 +79,16 @@
         $.post($commentForm.attr('action'), formData, function (data) {
             if (data.status == 'success') {
                 $.pjax(pjaxSettings);
+               /* var jScrollOptions_to_bottom = {
+                    maintainPosition:true,
+                    stickToBottom:true,
+                    autoReinitialise: true,
+                    autoReinitialiseDelay: 100,
+                    contentWidth: '0px'
+                };
+                setTimeout(function(){
+                    $('.scrollable-block').jScrollPane(jScrollOptions_to_bottom).data('jsp').scrollToBottom();
+                },500);*/
             }
             // errors handling
             else {
@@ -109,7 +119,15 @@
         var settings = commentData[event.data.wrapperSelector].settings;
         var parentCommentSelector = $this.parents('#comment-' + $this.data('comment-id') + '');
         // append the comment form inside particular comment container
-        $commentForm.appendTo(parentCommentSelector);
+        if ($this.hasClass('comment-reply-workflow')){
+            if (parentCommentSelector.find('.workflow-comments').length > 0)
+                $commentForm.prependTo(parentCommentSelector.find('.workflow-comments .children.level-1'));
+            else
+                $commentForm.appendTo(parentCommentSelector.find('.workflow-content_padding'));
+        }
+
+        else
+            $commentForm.appendTo(parentCommentSelector);
         $commentForm.find('[data-comment="parent-id"]').val($this.data('comment-id'));
         $commentForm.find(settings.cancelReplyBtnSelector).show();
 

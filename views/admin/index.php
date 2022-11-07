@@ -9,6 +9,7 @@
  * file that was distributed with this source code.
  */
 
+use lo\widgets\modal\ModalAjax;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\Url;
@@ -19,11 +20,38 @@ use yii\widgets\Pjax;
 /**
  * @var \yii\web\View $this
  * @var \yii\data\ActiveDataProvider $dataProvider
+ * @var bool $role строка с ролью пользователя. client, user
  * @var \dektrium\user\models\UserSearch $searchModel
  */
-
-$this->title = 'Список клиентов';
+if ($role == 'client')
+    $this->title = 'Список клиентов';
+else
+    $this->title = 'Список сотрудников';
 $this->params['breadcrumbs'][] = $this->title;
+?>
+<?php echo lo\widgets\modal\ModalAjax::widget([
+    'id' => 'user-ajax',
+    'header' => 'Создать пользователя',
+    'closeButton' => [
+        'class' => 'close modal-close'
+    ],
+    'selector' => 'a.lo-modal-user',
+    'autoClose' => true,
+    'pjaxContainer' => '#user-pjax',
+    //событие
+    'events' => [
+        lo\widgets\modal\ModalAjax::EVENT_MODAL_SUBMIT => new \yii\web\JsExpression("
+                                                function(event, data, status, xhr, selector) {
+                                                    if(status){
+                                                             $.pjax.reload({container: '#user-pjax', async: false});
+                                                             $(this).modal('toggle');
+                                                             $(this).modal('handleUpdate');
+                                                        }
+                                                       
+                                                    }
+                                           ")],
+    'ajaxSubmit' => true,
+]);
 ?>
 
 <?= $this->render('/_alert', ['module' => Yii::$app->getModule('user')]) ?>
@@ -37,118 +65,255 @@ $this->params['breadcrumbs'][] = $this->title;
     <div class="col-sm-2">
         <div class="form-group row">
             <div class="col-sm-12 text-right">
-                <?= Html::a('Создать клиента', ['admin/create'], ['class' => 'btn btn-success']) ?><br>
+                <?php if ($role == 'client')
+                    echo Html::a('Создать клиента', ['admin/create', 'role' => 'client'], ['class' => 'btn btn-success lo-modal-user', 'title' => '<h4 class="modal-title">Создать клиента</h4>']);
+                else
+                    echo Html::a('Создать сотрудника', ['admin/create', 'role' => 'expert'], ['class' => 'btn btn-success lo-modal-user', 'title' => '<h4 class="modal-title">Создать сотрудника</h4>'])
+                ?>
             </div>
         </div>
     </div>
 </div>
 
-<?php Pjax::begin() ?>
-
-<?= GridView::widget([
-    'dataProvider' => $dataProvider,
-    'filterModel'  => $searchModel,
-    'layout'       => "{items}\n{pager}",
-    'columns' => [
-        [
-            'attribute' => 'id',
-            'headerOptions' => ['style' => 'width:90px;'], # 90px is sufficient for 5-digit user ids
+<?php Pjax::begin(['id' => 'user-pjax', 'timeout' => 2000, 'enablePushState' => false]); ?>
+<div class="box-typical">
+    <?= GridView::widget([
+        'id' => 'user-grid',
+        'dataProvider' => $dataProvider,
+        'filterModel' => $searchModel,
+        'tableOptions' => ['class' => 'tbl-typical tbl-typical-min'],
+        'layout' => '{items}{pager}',
+        'pager' => [
+            'linkOptions' => [
+                'class' => 'page-link'
+            ],
+            'disabledListItemSubTagOptions' => ['tag' => 'span', 'class' => 'page-link'],
+            'prevPageLabel' => 'в начало',
+            'nextPageLabel' => 'в конец',
+            'pageCssClass' => 'paginate_button page-item',
+            'nextPageCssClass' => 'paginate_button page-item next',    // Set CSS class for the “next” page button
+            'prevPageCssClass' => 'paginate_button page-item previous',    // Set CSS class for the “previous” page button
         ],
-        'username',
-        'email:email',
-        [
-            'attribute' => 'registration_ip',
-            'value' => function ($model) {
-                return $model->registration_ip == null
-                    ? '<span class="not-set">' . Yii::t('user', '(not set)') . '</span>'
-                    : $model->registration_ip;
-            },
-            'format' => 'html',
-        ],
-        [
-            'attribute' => 'created_at',
-            'value' => function ($model) {
-                if (extension_loaded('intl')) {
-                    return Yii::t('user', '{0, date, MMMM dd, YYYY HH:mm}', [$model->created_at]);
-                } else {
-                    return date('Y-m-d G:i:s', $model->created_at);
-                }
-            },
-        ],
-
-        [
-          'attribute' => 'last_login_at',
-          'value' => function ($model) {
-            if (!$model->last_login_at || $model->last_login_at == 0) {
-                return Yii::t('user', 'Never');
-            } else if (extension_loaded('intl')) {
-                return Yii::t('user', '{0, date, MMMM dd, YYYY HH:mm}', [$model->last_login_at]);
-            } else {
-                return date('Y-m-d G:i:s', $model->last_login_at);
-            }
-          },
-        ],
-        [
-            'header' => Yii::t('user', 'Confirmation'),
-            'value' => function ($model) {
-                if ($model->isConfirmed) {
-                    return '<div class="text-center">
-                                <span class="text-success">' . Yii::t('user', 'Confirmed') . '</span>
-                            </div>';
-                } else {
-                    return Html::a(Yii::t('user', 'Confirm'), ['confirm', 'id' => $model->id], [
-                        'class' => 'btn btn-xs btn-success btn-block',
-                        'data-method' => 'post',
-                        'data-confirm' => Yii::t('user', 'Are you sure you want to confirm this user?'),
-                    ]);
-                }
-            },
-            'format' => 'raw',
-            'visible' => Yii::$app->getModule('user')->enableConfirmation,
-        ],
-        [
-            'header' => Yii::t('user', 'Block status'),
-            'value' => function ($model) {
-                if ($model->isBlocked) {
-                    return Html::a(Yii::t('user', 'Unblock'), ['block', 'id' => $model->id], [
-                        'class' => 'btn btn-xs btn-success btn-block',
-                        'data-method' => 'post',
-                        'data-confirm' => Yii::t('user', 'Are you sure you want to unblock this user?'),
-                    ]);
-                } else {
-                    return Html::a(Yii::t('user', 'Block'), ['block', 'id' => $model->id], [
-                        'class' => 'btn btn-xs btn-danger btn-block',
-                        'data-method' => 'post',
-                        'data-confirm' => Yii::t('user', 'Are you sure you want to block this user?'),
-                    ]);
-                }
-            },
-            'format' => 'raw',
-        ],
-        [
-            'class' => 'yii\grid\ActionColumn',
-            'template' => '{switch} {resend_password} {update} {delete}',
-            'buttons' => [
-                'resend_password' => function ($url, $model, $key) {
-                    if (\Yii::$app->user->identity->isAdmin && !$model->isAdmin) {
-                        return '
-                    <a data-method="POST" data-confirm="' . Yii::t('user', 'Are you sure?') . '" href="' . Url::to(['resend-password', 'id' => $model->id]) . '">
-                    <span title="' . Yii::t('user', 'Generate and send new password to user') . '" class="glyphicon glyphicon-envelope">
-                    </span> </a>';
+        'columns' => [
+            [
+                'attribute' => 'username',
+                'filterInputOptions' => [
+                    'placeholder' => 'поиск...',
+                    'class' => 'form-control',
+                ],
+                'format' => 'html',
+                'label' => 'Имя пользователя (ФИО)',
+                'content' => function ($data) {
+                    $out = Html::a('<span class="table-title">' . $data->username . '</span>', ['admin/view', 'id' => $data->id], ['class' => 'black-link']);
+                    if ($data->IsExpert) {
+                        $out = '<div class="user-card-row">
+                            <div class="tbl-row">
+                                <div class="tbl-cell tbl-cell-photo">
+                                ' . Html::a('<img src="' . $data->getImageSrc("small_") . '" alt="">', ['admin/view', 'id' => $data->id]) . '                         
+                                </div>
+                                <div class="tbl-cell">
+                                    <p class="user-card-row-name">' . Html::a($data->username, ['admin/view', 'id' => $data->id]) . '</p>
+                                    <p class="color-blue-grey-lighter">' . $data->company_posiotion . '</p>
+                                    '.(($data->IsAdmin) ? '<span class="label label-primary">Администратор</span>' : '').'
+                                </div>
+                            </div>
+                        </div>';
+                    }
+                    return $out;
+                },
+            ],
+            [
+                'filterInputOptions' => [
+                    'placeholder' => 'поиск...',
+                    'class' => 'form-control',
+                ],
+                'attribute' => 'email',
+            ],
+            [
+                'filterInputOptions' => [
+                    'placeholder' => 'поиск...',
+                    'class' => 'form-control',
+                ],
+                'attribute' => 'phone',
+            ],
+            [
+                'filterInputOptions' => [
+                    'placeholder' => 'поиск...',
+                    'class' => 'form-control',
+                ],
+                'attribute' => 'created_at',
+                'value' => function ($model) {
+                    if (extension_loaded('intl')) {
+                        return Yii::t('user', '{0, date, MMMM dd, YYYY HH:mm}', [$model->created_at]);
+                    } else {
+                        return date('Y-m-d G:i:s', $model->created_at);
                     }
                 },
-                'switch' => function ($url, $model) {
-                    if(\Yii::$app->user->identity->isAdmin && $model->id != Yii::$app->user->id && Yii::$app->getModule('user')->enableImpersonateUser) {
-                        return Html::a('<span class="glyphicon glyphicon-user"></span>', ['/user/admin/switch', 'id' => $model->id], [
-                            'title' => Yii::t('user', 'Become this user'),
-                            'data-confirm' => Yii::t('user', 'Are you sure you want to switch to this user for the rest of this Session?'),
-                            'data-method' => 'POST',
-                        ]);
+            ],
+            [
+                'filterInputOptions' => [
+                    'placeholder' => 'поиск...',
+                    'class' => 'form-control',
+                ],
+                'attribute' => 'last_login_at',
+                'value' => function ($model) {
+                    if (!$model->last_login_at || $model->last_login_at == 0) {
+                        return Yii::t('user', 'Never');
+                    } else if (extension_loaded('intl')) {
+                        return Yii::t('user', '{0, date, MMMM dd, YYYY HH:mm}', [$model->last_login_at]);
+                    } else {
+                        return date('Y-m-d G:i:s', $model->last_login_at);
                     }
-                }
-            ]
-        ],
-    ],
-]); ?>
+                },
+            ],
+            [
+                'header' => 'Статус',
+                'content' => function ($model) {
+                    $out = '';
+                    if ($model->isConfirmed) {
+                        $out .= '<div class="text-center">
+                                <span class="color-green">' . Yii::t('user', 'Confirmed') . '</span>
+                            </div>';
+                    } else {
+                        $out .= '<div class="text-center">
+                                <span class="color-red">' . Yii::t('user', 'Confirmed') . '</span>
+                            </div>';
+                    }
+                    $out .= '<span style="border-bottom:1px solid"></span>';
+                    if ($model->isBlocked) {
+                        $out .= '<div class="text-center">
+                                <span class="color-red">Заблокирован</span>
+                            </div>';
+                    }
 
+                    return $out;
+                },
+                'format' => 'html',
+                'visible' => Yii::$app->getModule('user')->enableConfirmation,
+            ],
+            [
+                'class' => 'yii\grid\ActionColumn',
+                'template' => '{all}',
+                'buttons' => [
+                    'all' => function ($url, $model, $key) {
+                        return \yii\bootstrap\ButtonDropdown::widget([
+                            'encodeLabel' => false, // if you're going to use html on the button label
+                            'label' => false,
+                            'dropdown' => [
+                                'encodeLabels' => false, // if you're going to use html on the items' labels
+                                'items' => [
+                                    [
+                                        'label' => 'Заблокировать',
+                                        'url' => ['block', 'id' => $key],
+                                        'linkOptions' => [
+                                            'data' => [
+                                                'method' => 'post',
+                                                'confirm' => Yii::t('user', 'Are you sure you want to block this user?'),
+                                            ],
+                                            'class' => 'color-red',
+                                        ],
+                                        'options' => [
+                                            'class' => 'dropdown-item', // right dropdown
+                                        ],
+                                        'visible' => (!$model->isBlocked && !$model->isAdmin),   //
+                                    ],
+                                    [
+                                        'label' => 'Разблокировать',
+                                        'url' => ['block', 'id' => $key],
+                                        'linkOptions' => [
+                                            'data' => [
+                                                'method' => 'post',
+                                                'confirm' => Yii::t('user', 'Are you sure you want to unblock this user?'),
+                                            ],
+                                            'class' => 'color-green',
+                                        ],
+                                        'options' => [
+                                            'class' => 'dropdown-item', // right dropdown
+                                        ],
+                                        'visible' => ($model->isBlocked && !$model->isAdmin),   //
+                                    ],
+                                    [
+                                        'label' => Yii::t('user', 'Confirm'),
+                                        'url' => ['confirm', 'id' => $key],
+                                        'linkOptions' => [
+                                            'data' => [
+                                                'method' => 'post',
+                                                'confirm' => Yii::t('user', 'Are you sure you want to confirm this user?'),
+                                            ],
+                                            'class' => 'color-green',
+                                        ],
+                                        'options' => [
+                                            'class' => 'dropdown-item', // right dropdown
+                                        ],
+                                        'visible' => (!$model->isConfirmed),   //
+                                    ],
+                                    [
+                                        'label' => Yii::t('user', 'Become this user'),
+                                        'url' => ['/user/admin/switch', 'id' => $key],
+                                        'linkOptions' => [
+                                            'data' => [
+                                                'method' => 'post',
+                                                'confirm' => Yii::t('user', 'Are you sure you want to switch to this user for the rest of this Session?'),
+                                            ],
+                                        ],
+                                        'options' => [
+                                            'class' => 'dropdown-item', // right dropdown
+                                        ],
+                                        'visible' => ((\Yii::$app->user->identity->isAdmin || \Yii::$app->user->identity->isExpert)  && !$model->isAdmin && $model->id != Yii::$app->user->id && Yii::$app->getModule('user')->enableImpersonateUser),   //
+                                    ],
+                                    [
+                                        'label' => 'Выслать новый пароль',
+                                        'url' => ['resend-password', 'id' => $key],
+                                        'linkOptions' => [
+                                            'data' => [
+                                                'method' => 'post',
+                                                'confirm' => Yii::t('user', 'Are you sure?'),
+                                            ],
+                                        ],
+                                        'options' => [
+                                            'class' => 'dropdown-item', // right dropdown
+                                        ],
+                                       // 'visible' => (\Yii::$app->user->identity->isAdmin && !$model->isAdmin),   //
+                                    ],
+
+                                    [
+                                        'label' => \Yii::t('yii', 'Update'),
+                                        'url' => ['update', 'id' => $key],
+
+                                        'options' => [
+                                            'class' => 'dropdown-item', // right dropdown
+                                        ],
+                                         'visible' => (!$model->isAdmin),   //
+                                    ],
+                                    [
+                                        'label' => \Yii::t('yii', 'Delete'),
+                                        'linkOptions' => [
+                                            'data' => [
+                                                'method' => 'post',
+                                                'confirm' => \Yii::t('yii', 'Are you sure you want to delete this item?'),
+                                            ],
+                                        ],
+                                        'url' => ['delete', 'id' => $key],
+                                        'options' => [
+                                            'class' => 'dropdown-item', // right dropdown
+                                        ],
+                                        'visible' => (!$model->isAdmin),   //
+                                    ],
+                                ],
+                                'options' => [
+                                    'class' => 'dropdown-menu-right', // right dropdown
+                                ],
+                            ],
+                            'options' => [
+                                'class' => 'btn-no-border-color',   // btn-success, btn-info, et cetera
+                            ],
+                            'split' => false,    // if you want a split button
+                        ]);
+                    },
+                ],
+            ],
+        ],
+    ]); ?>
+    <div class="clearfix"></div>
+</div>
 <?php Pjax::end() ?>
